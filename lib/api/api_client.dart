@@ -1,0 +1,79 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+class ApiClient {
+  static const String baseUrl =
+      'https://api.coka.ai'; // Thay đổi URL API của bạn
+  static const storage = FlutterSecureStorage();
+
+  late final Dio dio;
+
+  ApiClient() {
+    dio = Dio(BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+    ));
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: _requestInterceptor,
+        onError: _errorInterceptor,
+      ),
+    );
+  }
+
+  Future<void> _requestInterceptor(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    // Lấy token từ secure storage
+    final token = await storage.read(key: 'access_token');
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+    return handler.next(options);
+  }
+
+  Future<void> _errorInterceptor(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    if (err.response?.statusCode == 401) {
+      // Token hết hạn, thực hiện refresh token
+      try {
+        final refreshToken = await storage.read(key: 'refresh_token');
+        if (refreshToken != null) {
+          final response = await dio.post(
+            '/auth/refresh',
+            data: {'refresh_token': refreshToken},
+          );
+
+          final newToken = response.data['access_token'];
+          await storage.write(key: 'access_token', value: newToken);
+
+          // Thử lại request ban đầu với token mới
+          final opts = err.requestOptions;
+          opts.headers['Authorization'] = 'Bearer $newToken';
+
+          final cloneReq = await dio.request(
+            opts.path,
+            options: Options(
+              method: opts.method,
+              headers: opts.headers,
+            ),
+            data: opts.data,
+            queryParameters: opts.queryParameters,
+          );
+
+          return handler.resolve(cloneReq);
+        }
+      } catch (e) {
+        // Xử lý lỗi refresh token
+        await storage.deleteAll();
+        // TODO: Chuyển về trang login
+      }
+    }
+    return handler.next(err);
+  }
+}
