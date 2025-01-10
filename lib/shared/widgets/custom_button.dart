@@ -18,5 +18,3 @@ class CustomButton extends StatelessWidget {
     );
   }
 }
-
-// Thêm các widget dùng chung khác

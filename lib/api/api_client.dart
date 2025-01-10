@@ -45,28 +45,29 @@ class ApiClient {
         final refreshToken = await storage.read(key: 'refresh_token');
         if (refreshToken != null) {
           final response = await dio.post(
-            '/auth/refresh',
-            data: {'refresh_token': refreshToken},
+            '/api/v1/account/refreshtoken',
+            data: {'refreshToken': refreshToken},
           );
 
-          final newToken = response.data['access_token'];
-          await storage.write(key: 'access_token', value: newToken);
+          if (response.data != null && response.data['accessToken'] != null) {
+            final newToken = response.data['accessToken'];
+            await storage.write(key: 'access_token', value: newToken);
 
-          // Thử lại request ban đầu với token mới
-          final opts = err.requestOptions;
-          opts.headers['Authorization'] = 'Bearer $newToken';
+            final opts = err.requestOptions;
+            opts.headers['Authorization'] = 'Bearer $newToken';
 
-          final cloneReq = await dio.request(
-            opts.path,
-            options: Options(
-              method: opts.method,
-              headers: opts.headers,
-            ),
-            data: opts.data,
-            queryParameters: opts.queryParameters,
-          );
+            final cloneReq = await dio.request(
+              opts.path,
+              options: Options(
+                method: opts.method,
+                headers: opts.headers,
+              ),
+              data: opts.data,
+              queryParameters: opts.queryParameters,
+            );
 
-          return handler.resolve(cloneReq);
+            return handler.resolve(cloneReq);
+          }
         }
       } catch (e) {
         // Xử lý lỗi refresh token
