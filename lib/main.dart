@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'router.dart';
 import 'api/api_service.dart';
+import 'core/theme/app_theme.dart';
 
 void main() {
   final apiService = ApiService();
@@ -15,11 +16,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      title: 'Coka',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
       routerConfig: router,
     );
   }
