@@ -51,8 +51,13 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
 
         if (!mounted) return;
 
-        // Chuyển đến trang chủ và xóa stack điều hướng
-        context.go('/organization/default');
+        // Kiểm tra nếu fullName trùng với email thì chuyển đến trang hoàn tất đăng ký
+        if (response['metadata']['fullName'] == response['metadata']['email']) {
+          context.go('/complete-profile');
+        } else {
+          // Chuyển đến trang chủ và xóa stack điều hướng
+          context.go('/organization/default');
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

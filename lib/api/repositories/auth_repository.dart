@@ -1,6 +1,9 @@
 import '../api_client.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 class AuthRepository {
   final ApiClient _apiClient;
@@ -18,16 +21,19 @@ class AuthRepository {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> loginWithGoogle() async {
-    try {
-      final _googleSignIn = GoogleSignIn(
-        scopes: [
-          'email',
-          'profile',
-        ],
-      );
+  Future<Map<String, dynamic>> loginWithGoogle(
+      {bool forceNewAccount = false}) async {
+    final googleSignIn = GoogleSignIn(
+      scopes: ['email', 'profile'],
+      forceCodeForRefreshToken: true,
+    );
 
-      final googleUser = await _googleSignIn.signIn();
+    if (forceNewAccount) {
+      await googleSignIn.signOut();
+    }
+
+    try {
+      final googleUser = await googleSignIn.signIn();
       if (googleUser == null) throw Exception('Đăng nhập Google bị hủy');
 
       try {
@@ -105,8 +111,9 @@ class AuthRepository {
 
       if (result.status == LoginStatus.success) {
         final String? accessToken = result.accessToken?.tokenString;
-        if (accessToken == null)
+        if (accessToken == null) {
           throw Exception('Không thể lấy token Facebook');
+        }
 
         return await socialLogin(accessToken, 'facebook');
       } else if (result.status == LoginStatus.cancelled) {
@@ -117,6 +124,56 @@ class AuthRepository {
     } catch (e) {
       print('Chi tiết lỗi Facebook Sign-In: $e');
       throw Exception('Lỗi đăng nhập Facebook: ${e.toString()}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getUserInfo() async {
+    try {
+      final response = await _apiClient.get('/api/v1/user/profile/getdetail');
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data,
+      {File? avatar}) async {
+    try {
+      final formData = FormData();
+
+      // Thêm các thông tin cơ bản vào formData
+      data.forEach((key, value) {
+        if (value != null) {
+          formData.fields.add(MapEntry(key, value.toString()));
+        }
+      });
+
+      // Thêm avatar nếu có
+      if (avatar != null) {
+        String fileName = avatar.path.split('/').last;
+        String mimeType = fileName.endsWith('.png')
+            ? 'image/png'
+            : fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')
+                ? 'image/jpeg'
+                : 'image/jpg';
+
+        formData.files.add(MapEntry(
+          'avatar',
+          await MultipartFile.fromFile(
+            avatar.path,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        ));
+      }
+
+      final response = await _apiClient.patch(
+        '/api/v1/user/profile/update',
+        data: formData,
+      );
+      return response;
+    } catch (e) {
+      rethrow;
     }
   }
 }

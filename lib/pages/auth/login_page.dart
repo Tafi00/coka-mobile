@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:coka/api/repositories/auth_repository.dart';
 import 'package:coka/api/api_client.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:io' show Platform;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -73,7 +74,8 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => isGoogleLoading = true);
 
     try {
-      final response = await _authRepository.loginWithGoogle();
+      final response =
+          await _authRepository.loginWithGoogle(forceNewAccount: true);
 
       if (!mounted) return;
 
@@ -285,7 +287,8 @@ class _LoginPageState extends State<LoginPage> {
                       isLoading: isFacebookLoading,
                     ),
                     const SizedBox(height: 14),
-                    _buildSocialButton('apple_icon.png', 'Apple'),
+                    if (Platform.isIOS)
+                      _buildSocialButton('apple_icon.png', 'Apple'),
                   ],
                 ),
               ],

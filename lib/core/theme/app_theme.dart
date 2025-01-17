@@ -12,5 +12,12 @@ class AppTheme {
     fontFamily: 'GoogleSans',
     useMaterial3: true,
     textTheme: TextStyles.textTheme,
+    appBarTheme: const AppBarTheme(
+      toolbarHeight: 56,
+      titleSpacing: 8,
+      backgroundColor: Colors.white,
+      scrolledUnderElevation: 0,
+      elevation: 0,
+    ),
   );
 }

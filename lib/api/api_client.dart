@@ -49,9 +49,12 @@ class ApiClient {
             data: {'refreshToken': refreshToken},
           );
 
-          if (response.data != null && response.data['accessToken'] != null) {
-            final newToken = response.data['accessToken'];
+          if (response.data != null &&
+              response.data['content']['accessToken'] != null) {
+            final newToken = response.data['content']['accessToken'];
+            final newRefreshToken = response.data['content']['refreshToken'];
             await storage.write(key: 'access_token', value: newToken);
+            await storage.write(key: 'refresh_token', value: newRefreshToken);
 
             final opts = err.requestOptions;
             opts.headers['Authorization'] = 'Bearer $newToken';
@@ -76,5 +79,39 @@ class ApiClient {
       }
     }
     return handler.next(err);
+  }
+
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final response = await dio.get(
+      path,
+      queryParameters: queryParameters,
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> put(String path,
+      {Map<String, dynamic>? data}) async {
+    try {
+      final response = await dio.put(path, data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> patch(String path, {dynamic data}) async {
+    try {
+      final response = await dio.patch(path, data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> logout() async {
+    await storage.deleteAll();
   }
 }
