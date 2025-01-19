@@ -1,6 +1,5 @@
 import 'package:coka/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:badges/badges.dart' as badges;
 
 class CustomBottomNavigation extends StatelessWidget {

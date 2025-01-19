@@ -14,8 +14,10 @@ class TeamsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đội sale'),
+        title: const Text('Đội sale', style: TextStyle(fontSize: 16)),
+        centerTitle: true,
       ),
+      backgroundColor: Colors.white,
       body: Center(
         child: Text(
           'Danh sách đội sale của workspace $workspaceId',

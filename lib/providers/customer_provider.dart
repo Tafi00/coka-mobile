@@ -10,21 +10,44 @@ final customerListProvider = StateNotifierProvider<CustomerListNotifier,
 class CustomerListNotifier
     extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
   final CustomerRepository _repository;
+  String? _lastOrganizationId;
+  String? _lastWorkspaceId;
+  Map<String, String>? _lastQueryParams;
 
   CustomerListNotifier(this._repository) : super(const AsyncValue.loading());
 
   Future<void> loadCustomers(String organizationId, String workspaceId,
       Map<String, String> queryParams) async {
+    if (_lastOrganizationId == organizationId &&
+        _lastWorkspaceId == workspaceId &&
+        _mapEquals(_lastQueryParams, queryParams)) {
+      return;
+    }
+
     try {
-      state = const AsyncValue.loading();
+      if (state.value == null) {
+        state = const AsyncValue.loading();
+      }
+
       final response = await _repository.getCustomers(
           organizationId, workspaceId,
           queryParameters: queryParams);
       final items = response['content'] as List;
+
+      _lastOrganizationId = organizationId;
+      _lastWorkspaceId = workspaceId;
+      _lastQueryParams = Map<String, String>.from(queryParams);
+
       state = AsyncValue.data(items.cast<Map<String, dynamic>>());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
+  }
+
+  bool _mapEquals(Map<String, String>? map1, Map<String, String>? map2) {
+    if (map1 == null || map2 == null) return map1 == map2;
+    if (map1.length != map2.length) return false;
+    return map1.entries.every((e) => map2[e.key] == e.value);
   }
 
   void addCustomer(Map<String, dynamic> customer) {

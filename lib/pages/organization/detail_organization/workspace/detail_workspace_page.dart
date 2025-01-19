@@ -23,71 +23,84 @@ class _DetailWorkspacePageState extends State<DetailWorkspacePage> {
 
   @override
   Widget build(BuildContext context) {
+    final state = GoRouterState.of(context);
+    final location = state.uri.path;
+    print('Current location: $location');
+    final hideBottomNav = location.contains('/customers/');
+
     return Scaffold(
       body: widget.child,
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
+      bottomNavigationBar: AnimatedCrossFade(
+        duration: const Duration(milliseconds: 200),
+        crossFadeState: hideBottomNav
+            ? CrossFadeState.showSecond
+            : CrossFadeState.showFirst,
+        firstChild: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                );
+              }
               return const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w500,
+                color: AppColors.text,
+                fontWeight: FontWeight.w400,
                 fontSize: 12,
               );
-            }
-            return const TextStyle(
-              color: AppColors.text,
-              fontWeight: FontWeight.w400,
-              fontSize: 12,
-            );
-          }),
+            }),
+          ),
+          child: NavigationBar(
+            selectedIndex: _currentIndex,
+            animationDuration: const Duration(milliseconds: 500),
+            indicatorColor: const Color(0xFFDCDBFF),
+            backgroundColor: Colors.white,
+            elevation: 4,
+            shadowColor: Colors.black,
+            surfaceTintColor: Colors.white,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            height: 68,
+            onDestinationSelected: (index) {
+              setState(() => _currentIndex = index);
+              switch (index) {
+                case 0:
+                  context.replace(
+                      '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers');
+                  break;
+                case 1:
+                  context.replace(
+                      '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/teams');
+                  break;
+                case 2:
+                  context.replace(
+                      '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/reports');
+                  break;
+              }
+            },
+            destinations: [
+              NavigationDestination(
+                icon: Icon(Icons.people_outline, color: AppColors.textTertiary),
+                selectedIcon: Icon(Icons.people, color: AppColors.primary),
+                label: 'Khách hàng',
+              ),
+              NavigationDestination(
+                icon:
+                    Icon(Icons.groups_outlined, color: AppColors.textTertiary),
+                selectedIcon: Icon(Icons.groups, color: AppColors.primary),
+                label: 'Đội sale',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.analytics_outlined,
+                    color: AppColors.textTertiary),
+                selectedIcon: Icon(Icons.analytics, color: AppColors.primary),
+                label: 'Báo cáo',
+              ),
+            ],
+          ),
         ),
-        child: NavigationBar(
-          selectedIndex: _currentIndex,
-          animationDuration: const Duration(milliseconds: 500),
-          indicatorColor: const Color(0xFFDCDBFF),
-          backgroundColor: Colors.white,
-          elevation: 4,
-          shadowColor: Colors.black,
-          surfaceTintColor: Colors.white,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          height: 68,
-          onDestinationSelected: (index) {
-            setState(() => _currentIndex = index);
-            switch (index) {
-              case 0:
-                context.replace(
-                    '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers');
-                break;
-              case 1:
-                context.replace(
-                    '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/teams');
-                break;
-              case 2:
-                context.replace(
-                    '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/reports');
-                break;
-            }
-          },
-          destinations: [
-            NavigationDestination(
-              icon: Icon(Icons.people_outline, color: AppColors.textTertiary),
-              selectedIcon: Icon(Icons.people, color: AppColors.primary),
-              label: 'Khách hàng',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.groups_outlined, color: AppColors.textTertiary),
-              selectedIcon: Icon(Icons.groups, color: AppColors.primary),
-              label: 'Đội sale',
-            ),
-            NavigationDestination(
-              icon:
-                  Icon(Icons.analytics_outlined, color: AppColors.textTertiary),
-              selectedIcon: Icon(Icons.analytics, color: AppColors.primary),
-              label: 'Báo cáo',
-            ),
-          ],
-        ),
+        secondChild: const SizedBox(height: 0),
       ),
     );
   }

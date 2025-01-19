@@ -3,6 +3,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:collection/collection.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../../api/repositories/customer_repository.dart';
 import '../../../../../../api/api_client.dart';
 import '../../../../../../core/theme/app_colors.dart';
@@ -10,6 +11,7 @@ import '../../../../../../core/utils/helpers.dart';
 import '../../../../../../shared/widgets/avatar_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../providers/customer_provider.dart';
+import '../customer_detail/customer_detail_page.dart';
 
 class CustomersList extends ConsumerStatefulWidget {
   final String organizationId;
@@ -36,6 +38,7 @@ class _CustomersListState extends ConsumerState<CustomersList> {
   final int _limit = 20;
   final _mapEquality = const MapEquality<String, dynamic>();
   final _customerRepository = CustomerRepository(ApiClient());
+  bool _isFirstLoad = true;
 
   @override
   void initState() {
@@ -45,15 +48,6 @@ class _CustomersListState extends ConsumerState<CustomersList> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pagingController.refresh();
-    });
-
-    // Lắng nghe thay đổi từ provider để refresh khi có khách hàng mới
-    ref.listenManual(customerListProvider, (previous, next) {
-      next.whenData((customers) {
-        if (mounted) {
-          _pagingController.refresh();
-        }
-      });
     });
   }
 
@@ -71,6 +65,9 @@ class _CustomersListState extends ConsumerState<CustomersList> {
         oldWidget.workspaceId != widget.workspaceId ||
         oldWidget.searchQuery != widget.searchQuery ||
         !_mapEquality.equals(oldWidget.queryParams, widget.queryParams)) {
+      setState(() {
+        _isFirstLoad = true;
+      });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _pagingController.refresh();
@@ -90,19 +87,20 @@ class _CustomersListState extends ConsumerState<CustomersList> {
       params['searchText'] = widget.searchQuery;
       params['stageGroupId'] = widget.stageGroupId;
 
-      await Future(() async {
-        await ref.read(customerListProvider.notifier).loadCustomers(
-              widget.organizationId,
-              widget.workspaceId,
-              params
-                  .map((key, value) => MapEntry(key, value?.toString() ?? '')),
-            );
-      });
+      await ref.read(customerListProvider.notifier).loadCustomers(
+            widget.organizationId,
+            widget.workspaceId,
+            params.map((key, value) => MapEntry(key, value?.toString() ?? '')),
+          );
 
       if (!mounted) return;
 
       final customers = ref.read(customerListProvider).value ?? [];
       final isLastPage = customers.length < _limit;
+
+      setState(() {
+        _isFirstLoad = false;
+      });
 
       if (isLastPage) {
         _pagingController.appendLastPage(customers);
@@ -111,6 +109,9 @@ class _CustomersListState extends ConsumerState<CustomersList> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isFirstLoad = false;
+        });
         _pagingController.error = e;
       }
     }
@@ -172,7 +173,9 @@ class _CustomersListState extends ConsumerState<CustomersList> {
 
     return InkWell(
       onTap: () {
-        // TODO: Navigate to customer detail
+        context.push(
+          '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers/${customer['id']}',
+        );
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -275,6 +278,9 @@ class _CustomersListState extends ConsumerState<CustomersList> {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () async {
+        setState(() {
+          _isFirstLoad = true;
+        });
         _pagingController.refresh();
       },
       child: PagedListView<int, Map<String, dynamic>>(
@@ -282,12 +288,14 @@ class _CustomersListState extends ConsumerState<CustomersList> {
         builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
           itemBuilder: (context, customer, index) =>
               _buildCustomerItem(customer),
-          firstPageProgressIndicatorBuilder: (context) => Column(
-            children: List.generate(
-              5,
-              (index) => _buildShimmerItem(),
-            ),
-          ),
+          firstPageProgressIndicatorBuilder: (context) => _isFirstLoad
+              ? Column(
+                  children: List.generate(
+                    5,
+                    (index) => _buildShimmerItem(),
+                  ),
+                )
+              : const SizedBox.shrink(),
           newPageProgressIndicatorBuilder: (context) => _buildShimmerItem(),
           firstPageErrorIndicatorBuilder: (context) => Center(
             child: Column(
@@ -302,7 +310,12 @@ class _CustomersListState extends ConsumerState<CustomersList> {
                 ),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: () => _pagingController.refresh(),
+                  onPressed: () {
+                    setState(() {
+                      _isFirstLoad = true;
+                    });
+                    _pagingController.refresh();
+                  },
                   child: Text(
                     'Thử lại',
                     style: TextStyle(
@@ -315,12 +328,14 @@ class _CustomersListState extends ConsumerState<CustomersList> {
               ],
             ),
           ),
-          noItemsFoundIndicatorBuilder: (context) => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Không có khách hàng nào'),
-            ),
-          ),
+          noItemsFoundIndicatorBuilder: (context) => _isFirstLoad
+              ? const SizedBox.shrink()
+              : const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Không có khách hàng nào'),
+                  ),
+                ),
         ),
       ),
     );
