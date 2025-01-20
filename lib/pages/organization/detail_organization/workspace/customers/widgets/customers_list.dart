@@ -11,7 +11,6 @@ import '../../../../../../core/utils/helpers.dart';
 import '../../../../../../shared/widgets/avatar_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../providers/customer_provider.dart';
-import '../customer_detail/customer_detail_page.dart';
 
 class CustomersList extends ConsumerStatefulWidget {
   final String organizationId;
@@ -183,7 +182,7 @@ class _CustomersListState extends ConsumerState<CustomersList> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AvatarWidget(
-              imgData: null,
+              imgUrl: null,
               width: 48,
               height: 48,
               borderRadius: 24,
@@ -248,7 +247,7 @@ class _CustomersListState extends ConsumerState<CustomersList> {
                     children: [
                       if (assignToUser != null) ...[
                         AvatarWidget(
-                          imgData: assignToUser['avatar'],
+                          imgUrl: assignToUser['avatar'],
                           width: 16,
                           height: 16,
                           borderRadius: 8,

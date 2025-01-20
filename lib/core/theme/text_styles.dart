@@ -32,6 +32,12 @@ class TextStyles {
     fontWeight: FontWeight.w500,
     color: AppColors.textTertiary,
   );
+  static const TextStyle subtitle3 = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textTertiary,
+    overflow: TextOverflow.ellipsis,
+  );
   static const TextStyle body = TextStyle(
     fontSize: 14,
     color: AppColors.text,

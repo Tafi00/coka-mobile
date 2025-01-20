@@ -4,7 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:coka/core/utils/helpers.dart';
 
 class AvatarWidget extends StatelessWidget {
-  final String? imgData;
+  final String? imgUrl;
   final double? width;
   final double? height;
   final BoxFit fit;
@@ -15,7 +15,7 @@ class AvatarWidget extends StatelessWidget {
 
   const AvatarWidget({
     super.key,
-    this.imgData,
+    this.imgUrl,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
@@ -55,7 +55,7 @@ class AvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (imgData == null || imgData!.isEmpty) {
+    if (imgUrl == null || imgUrl!.isEmpty) {
       return Container(
         width: width,
         height: height,
@@ -87,7 +87,7 @@ class AvatarWidget extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius ?? 0),
         child: CachedNetworkImage(
-          imageUrl: Helpers.getAvatarUrl(imgData!),
+          imageUrl: Helpers.getAvatarUrl(imgUrl!),
           width: width,
           height: height,
           fit: fit,

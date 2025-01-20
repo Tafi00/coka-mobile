@@ -217,7 +217,7 @@ class _AssigneeSelectionDialogState extends State<AssigneeSelectionDialog>
       leading: AvatarWidget(
         width: 40,
         height: 40,
-        imgData: assignee.avatar,
+        imgUrl: assignee.avatar,
         fallbackText: assignee.name,
         borderRadius: 100,
       ),

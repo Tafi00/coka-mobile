@@ -76,3 +76,45 @@ class CustomerListNotifier
     });
   }
 }
+
+final customerDetailProvider = StateNotifierProvider.family<
+    CustomerDetailNotifier,
+    AsyncValue<Map<String, dynamic>?>,
+    String>((ref, customerId) {
+  return CustomerDetailNotifier(
+    customerRepository: CustomerRepository(ApiClient()),
+    customerId: customerId,
+  );
+});
+
+class CustomerDetailNotifier
+    extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
+  final CustomerRepository _customerRepository;
+  final String _customerId;
+
+  CustomerDetailNotifier({
+    required CustomerRepository customerRepository,
+    required String customerId,
+  })  : _customerRepository = customerRepository,
+        _customerId = customerId,
+        super(const AsyncValue.loading());
+
+  Future<void> loadCustomerDetail(
+      String organizationId, String workspaceId) async {
+    try {
+      state = const AsyncValue.loading();
+      final response = await _customerRepository.getCustomerDetail(
+        organizationId,
+        workspaceId,
+        _customerId,
+      );
+      state = AsyncValue.data(response['content'] as Map<String, dynamic>);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  void clearCustomerDetail() {
+    state = const AsyncValue.data(null);
+  }
+}

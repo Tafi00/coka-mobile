@@ -390,7 +390,7 @@ class _FilterModalState extends State<FilterModal> {
                                         AvatarWidget(
                                           width: 16,
                                           height: 16,
-                                          imgData: item.avatar,
+                                          imgUrl: item.avatar,
                                           fallbackText: item.name,
                                           borderRadius: 100,
                                         ),

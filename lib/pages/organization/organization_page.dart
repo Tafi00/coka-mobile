@@ -190,7 +190,7 @@ class _OrganizationPageState extends State<OrganizationPage> {
           height: 48,
           borderRadius: 16,
           fallbackText: _userInfo?['fullName'],
-          imgData: _userInfo?['avatar'],
+          imgUrl: _userInfo?['avatar'],
         ),
       ),
     );

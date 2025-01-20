@@ -148,7 +148,7 @@ class _OrganizationDetailCardState extends State<OrganizationDetailCard> {
                 height: 60,
                 borderRadius: 16,
                 fallbackText: _organizationDetail!['name'],
-                imgData: _organizationDetail!['avatar'],
+                imgUrl: _organizationDetail!['avatar'],
                 outline: Border.all(
                   color: const Color(0xFFE3DFFF),
                   width: 1,

@@ -93,7 +93,7 @@ class OrganizationDrawer extends StatelessWidget {
                               height: 40,
                               borderRadius: 8,
                               fallbackText: org['name'],
-                              imgData: org['avatar'],
+                              imgUrl: org['avatar'],
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -128,7 +128,7 @@ class OrganizationDrawer extends StatelessWidget {
                         height: 48,
                         borderRadius: 26,
                         fallbackText: userInfo?['fullName'],
-                        imgData: userInfo?['avatar'],
+                        imgUrl: userInfo?['avatar'],
                       ),
                       const SizedBox(height: 8),
                       Text(
