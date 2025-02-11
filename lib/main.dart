@@ -9,7 +9,6 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'providers/customer_provider.dart';
 
 class CustomViMessages implements timeago.LookupMessages {
   @override

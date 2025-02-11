@@ -3,8 +3,10 @@ import 'package:coka/core/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../../providers/customer_provider.dart';
 import '../../../../../../shared/widgets/avatar_widget.dart';
+import 'widgets/customer_journey.dart';
 
 class CustomerDetailPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -186,45 +188,53 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
               return const SizedBox();
             }
 
-            return Row(
-              children: [
-                AvatarWidget(
-                  fallbackText: customerDetail['fullName'] ?? '',
-                  imgUrl: customerDetail['avatar'],
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        customerDetail['fullName'] ?? '',
-                        style: const TextStyle(
-                          color: AppColors.text,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (customerDetail['gender'] != null)
-                        Text(
-                          customerDetail['gender'] == 1
-                              ? 'Nam'
-                              : customerDetail['gender'] == 0
-                                  ? 'Nữ'
-                                  : 'Khác',
-                          style: TextStyles.subtitle3,
-                          maxLines: 1,
-                        ),
-                    ],
+            return GestureDetector(
+              onTap: () {
+                context.go(
+                  '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers/${widget.customerId}/basic-info',
+                  extra: customerDetail,
+                );
+              },
+              child: Row(
+                children: [
+                  AvatarWidget(
+                    fallbackText: customerDetail['fullName'] ?? '',
+                    imgUrl: customerDetail['avatar'],
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          customerDetail['fullName'] ?? '',
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (customerDetail['gender'] != null)
+                          Text(
+                            customerDetail['gender'] == 1
+                                ? 'Nam'
+                                : customerDetail['gender'] == 0
+                                    ? 'Nữ'
+                                    : 'Khác',
+                            style: TextStyles.subtitle3,
+                            maxLines: 1,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -244,7 +254,8 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
           if (customerDetail == null) {
             return const Center(child: Text('Không có dữ liệu'));
           }
-          return const Center(child: Text('Chi tiết khách hàng'));
+
+          return CustomerJourney(customerDetail: customerDetail);
         },
       ),
     );

@@ -2,5 +2,5 @@
   "java.dependency.syncWithFolderExplorer": true,
   "java.project.explorer.showNonJavaResources": true,
   "java.dependency.packagePresentation": "flat",
-  "dart.flutterSdkPath": "C:\\flutter"
+  "dart.flutterSdkPath": "C:\\src\\flutter"
 }
