@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../../providers/customer_provider.dart';
 import '../../../../../../shared/widgets/avatar_widget.dart';
 import 'widgets/customer_journey.dart';
+import 'widgets/assign_to_bottomsheet.dart';
 
 class CustomerDetailPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -132,6 +133,10 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         title: customerDetailAsync.when(
           loading: () => Row(
             children: [
@@ -239,9 +244,165 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
           },
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {},
+          customerDetailAsync.when(
+            loading: () => const SizedBox(),
+            error: (_, __) => const SizedBox(),
+            data: (customerDetail) {
+              if (customerDetail == null) return const SizedBox();
+
+              return MenuAnchor(
+                alignmentOffset: const Offset(-160, 0),
+                menuChildren: [
+                  MenuItemButton(
+                    leadingIcon: const Icon(Icons.person_add_outlined),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(12)),
+                        ),
+                        builder: (context) => AssignToBottomSheet(
+                          onSelected: (selectedUser) {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Chuyển phụ trách?'),
+                                content: const Text(
+                                    'Bạn có chắc muốn phân phối data đến người này?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => context.pop(),
+                                    child: const Text('Hủy'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      try {
+                                        await ref
+                                            .read(customerDetailProvider(
+                                                    widget.customerId)
+                                                .notifier)
+                                            .assignToCustomer(
+                                              widget.organizationId,
+                                              widget.workspaceId,
+                                              selectedUser,
+                                            );
+                                        if (!context.mounted) return;
+                                        context.pop();
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  'Đã chuyển phụ trách thành công')),
+                                        );
+                                      } catch (e) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content:
+                                                  Text('Lỗi: ${e.toString()}')),
+                                        );
+                                      }
+                                    },
+                                    child: const Text('Đồng ý'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Chuyển phụ trách',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
+                  MenuItemButton(
+                    leadingIcon: const Icon(Icons.edit_outlined),
+                    onPressed: () {
+                      context.push(
+                        '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers/${widget.customerId}/edit',
+                        extra: customerDetail,
+                      );
+                    },
+                    child: const Text(
+                      'Chỉnh sửa thông tin',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
+                  MenuItemButton(
+                    leadingIcon:
+                        const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Xóa khách hàng?'),
+                          content: const Text(
+                              'Bạn có chắc muốn xóa khách hàng này? Hành động này không thể hoàn tác.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => context.pop(),
+                              child: const Text('Hủy'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                try {
+                                  await ref
+                                      .read(customerDetailProvider(
+                                              widget.customerId)
+                                          .notifier)
+                                      .deleteCustomer(
+                                        widget.organizationId,
+                                        widget.workspaceId,
+                                      );
+                                  if (!context.mounted) return;
+                                  context.pop();
+                                  context.go(
+                                      '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers');
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Đã xóa khách hàng thành công')),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text('Lỗi: ${e.toString()}')),
+                                  );
+                                }
+                              },
+                              child: const Text('Xóa',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Xóa khách hàng',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+                builder: (context, controller, child) {
+                  return IconButton(
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () {
+                      if (controller.isOpen) {
+                        controller.close();
+                      } else {
+                        controller.open();
+                      }
+                    },
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
@@ -255,7 +416,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
             return const Center(child: Text('Không có dữ liệu'));
           }
 
-          return CustomerJourney(customerDetail: customerDetail);
+          return const CustomerJourney();
         },
       ),
     );

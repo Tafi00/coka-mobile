@@ -18,6 +18,7 @@ import 'pages/organization/detail_organization/workspace/teams/team_detail_page.
 import 'pages/organization/detail_organization/workspace/reports/reports_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/customer_detail/customer_detail_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/customer_detail/pages/customer_basic_info_page.dart';
+import 'pages/organization/detail_organization/workspace/customers/edit_customer_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/add_customer_page.dart';
 import 'pages/organization/settings/settings_page.dart';
 
@@ -177,6 +178,22 @@ final appRoutes = [
                   final customerDetail = state.extra as Map<String, dynamic>;
                   return CustomerBasicInfoPage(
                     customerDetail: customerDetail,
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) {
+                  final organizationId =
+                      state.pathParameters['organizationId']!;
+                  final workspaceId = state.pathParameters['workspaceId']!;
+                  final customerId = state.pathParameters['customerId']!;
+                  final customerDetail = state.extra as Map<String, dynamic>;
+                  return EditCustomerPage(
+                    organizationId: organizationId,
+                    workspaceId: workspaceId,
+                    customerId: customerId,
+                    customerData: customerDetail,
                   );
                 },
               ),

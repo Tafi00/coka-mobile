@@ -87,6 +87,16 @@ final customerDetailProvider = StateNotifierProvider.family<
   );
 });
 
+final customerJourneyProvider = StateNotifierProvider.family<
+    CustomerJourneyNotifier,
+    AsyncValue<List<dynamic>>,
+    String>((ref, customerId) {
+  return CustomerJourneyNotifier(
+    customerRepository: CustomerRepository(ApiClient()),
+    customerId: customerId,
+  );
+});
+
 class CustomerDetailNotifier
     extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
   final CustomerRepository _customerRepository;
@@ -114,7 +124,108 @@ class CustomerDetailNotifier
     }
   }
 
+  Future<void> assignToCustomer(
+    String organizationId,
+    String workspaceId,
+    Map<String, dynamic> assignToData,
+  ) async {
+    try {
+      await _customerRepository.assignToCustomer(
+        organizationId,
+        workspaceId,
+        _customerId,
+        assignToData,
+      );
+      await loadCustomerDetail(organizationId, workspaceId);
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateCustomer(
+    String organizationId,
+    String workspaceId,
+    dynamic formData,
+  ) async {
+    try {
+      final response = await _customerRepository.updateCustomer(
+        organizationId,
+        workspaceId,
+        _customerId,
+        formData,
+      );
+
+      // Reload customer detail after update
+      await loadCustomerDetail(organizationId, workspaceId);
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteCustomer(
+    String organizationId,
+    String workspaceId,
+  ) async {
+    try {
+      await _customerRepository.deleteCustomer(
+        organizationId,
+        workspaceId,
+        _customerId,
+      );
+      state = const AsyncValue.data(null);
+    } catch (error) {
+      rethrow;
+    }
+  }
+
   void clearCustomerDetail() {
     state = const AsyncValue.data(null);
+  }
+}
+
+class CustomerJourneyNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
+  final CustomerRepository _customerRepository;
+  final String _customerId;
+
+  CustomerJourneyNotifier({
+    required CustomerRepository customerRepository,
+    required String customerId,
+  })  : _customerRepository = customerRepository,
+        _customerId = customerId,
+        super(const AsyncValue.loading());
+
+  Future<void> loadJourneyList(
+      String organizationId, String workspaceId) async {
+    try {
+      state = const AsyncValue.loading();
+      final response = await _customerRepository.getJourneyList(
+        organizationId,
+        workspaceId,
+        _customerId,
+      );
+      state = AsyncValue.data(response['content'] ?? []);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  Future<void> updateJourney(
+    String organizationId,
+    String workspaceId,
+    String stageId,
+    String note,
+  ) async {
+    try {
+      await _customerRepository.updateJourney(
+        organizationId,
+        workspaceId,
+        _customerId,
+        stageId,
+        note,
+      );
+      await loadJourneyList(organizationId, workspaceId);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 }

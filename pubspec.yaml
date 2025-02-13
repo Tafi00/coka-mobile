@@ -1,5 +1,5 @@
-name: coka
-description: "A new Flutter project."
+name: coka_mobile
+description: A new Flutter project.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -19,7 +19,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.6.0
+  sdk: ">=3.0.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -43,13 +43,15 @@ dependencies:
   shimmer: ^3.0.0
   timeago: ^3.6.1
   flutter_html: ^3.0.0-beta.2
+  flutter_html_audio: ^3.0.0-beta.2
+  flutter_rating_bar: ^4.0.1
   infinite_scroll_pagination: ^4.0.0
-  flutter_riverpod: ^2.5.1
+  flutter_riverpod: ^2.4.9
   gap: ^3.0.1
-
+  url_launcher: ^6.2.5
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.2
   flutter_launcher_icons: ^0.14.2
   dio: ^5.7.0
   flutter_secure_storage: ^9.0.0
@@ -61,6 +63,7 @@ dependencies:
   intl: ^0.19.0
   flutter_speed_dial: ^7.0.0
   flutter_contacts: ^1.1.9+2
+  syncfusion_flutter_charts: ^24.1.47
 
 dev_dependencies:
   flutter_test:
@@ -71,7 +74,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^2.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
