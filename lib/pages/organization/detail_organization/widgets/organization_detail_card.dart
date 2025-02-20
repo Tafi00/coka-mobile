@@ -165,7 +165,7 @@ class _OrganizationDetailCardState extends State<OrganizationDetailCard> {
                         Expanded(
                           child: Text(
                             _organizationDetail!['name'],
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.text,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -176,7 +176,7 @@ class _OrganizationDetailCardState extends State<OrganizationDetailCard> {
                         ),
                       ],
                     ),
-                    Text(
+                    const Text(
                       'Doanh nghiệp',
                       style: TextStyles.title,
                     ),

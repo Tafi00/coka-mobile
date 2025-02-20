@@ -120,7 +120,7 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
                 height: 80,
               ),
               const SizedBox(height: 14),
-              Text(
+              const Text(
                 'Đăng nhập bằng Email',
                 style: TextStyles.heading1,
               ),
@@ -160,12 +160,12 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
                   }
                 },
                 onChanged: (value) {},
-                boxShadows: [
+                boxShadows: const [
                   BoxShadow(
                     color: Color.fromRGBO(0, 0, 0, 0.1),
                     spreadRadius: 1,
                     blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
@@ -208,7 +208,7 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.arrow_back,
                       size: 20,
                       color: AppColors.text,

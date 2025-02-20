@@ -26,7 +26,7 @@ class OrganizationDrawer extends StatelessWidget {
         children: [
           Container(
             width: MediaQuery.of(context).size.width * 0.24,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.backgroundTertiary,
             ),
             padding: const EdgeInsets.only(top: 8),
@@ -49,7 +49,7 @@ class OrganizationDrawer extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.add,
                           color: AppColors.primary,
                           size: 20,
@@ -69,7 +69,7 @@ class OrganizationDrawer extends StatelessWidget {
                         child: Container(
                           width: 3,
                           height: 40,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.primary,
                             borderRadius: BorderRadius.horizontal(
                                 right: Radius.circular(24.0)),
@@ -141,7 +141,7 @@ class OrganizationDrawer extends StatelessWidget {
                         onTap: () {
                           // TODO: Navigate to profile
                         },
-                        child: Text(
+                        child: const Text(
                           'Xem Profile của bạn',
                           style: TextStyle(
                             color: AppColors.textTertiary,
@@ -160,7 +160,7 @@ class OrganizationDrawer extends StatelessWidget {
                     child: Column(
                       children: [
                         ListTile(
-                          leading: Icon(Icons.group_add_outlined,
+                          leading: const Icon(Icons.group_add_outlined,
                               color: AppColors.primary),
                           title: const Text('Tham gia tổ chức'),
                           dense: true,
@@ -170,7 +170,7 @@ class OrganizationDrawer extends StatelessWidget {
                           },
                         ),
                         ListTile(
-                          leading: Icon(Icons.person_add_outlined,
+                          leading: const Icon(Icons.person_add_outlined,
                               color: AppColors.primary),
                           title: const Text('Lời mời'),
                           dense: true,
@@ -192,7 +192,7 @@ class OrganizationDrawer extends StatelessWidget {
                           },
                         ),
                         ListTile(
-                          leading: Icon(Icons.workspace_premium_outlined,
+                          leading: const Icon(Icons.workspace_premium_outlined,
                               color: AppColors.primary),
                           title: const Text('Nâng cấp tài khoản'),
                           dense: true,
@@ -202,7 +202,7 @@ class OrganizationDrawer extends StatelessWidget {
                           },
                         ),
                         ListTile(
-                          leading: Icon(Icons.help_outline,
+                          leading: const Icon(Icons.help_outline,
                               color: AppColors.primary),
                           title: const Text('Trợ giúp - Hỗ trợ'),
                           dense: true,
@@ -212,7 +212,7 @@ class OrganizationDrawer extends StatelessWidget {
                           },
                         ),
                         ListTile(
-                          leading: Icon(Icons.settings_outlined,
+                          leading: const Icon(Icons.settings_outlined,
                               color: AppColors.primary),
                           title: const Text('Cài đặt'),
                           dense: true,
@@ -227,7 +227,8 @@ class OrganizationDrawer extends StatelessWidget {
                           height: 1,
                         ),
                         ListTile(
-                          leading: Icon(Icons.logout, color: AppColors.primary),
+                          leading: const Icon(Icons.logout,
+                              color: AppColors.primary),
                           title: const Text('Đăng xuất'),
                           dense: true,
                           visualDensity: const VisualDensity(vertical: -1.0),

@@ -154,7 +154,7 @@ class _FilterModalState extends State<FilterModal> {
 
   static final _inputDecoration = InputDecoration(
     hintText: 'Tất cả',
-    suffixIcon: Icon(Icons.keyboard_arrow_down, color: AppColors.text),
+    suffixIcon: const Icon(Icons.keyboard_arrow_down, color: AppColors.text),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
@@ -366,7 +366,7 @@ class _FilterModalState extends State<FilterModal> {
                       valueListenable: _assigneesNotifier,
                       builder: (context, assignees, _) {
                         return assignees.isEmpty
-                            ? Text(
+                            ? const Text(
                                 'Tất cả',
                                 style: TextStyle(
                                   fontSize: 14,
@@ -425,7 +425,7 @@ class _FilterModalState extends State<FilterModal> {
                       },
                     ),
                   ),
-                  Icon(
+                  const Icon(
                     Icons.keyboard_arrow_down,
                     color: AppColors.text,
                   ),

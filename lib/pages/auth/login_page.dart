@@ -183,12 +183,12 @@ class _LoginPageState extends State<LoginPage> {
                   height: 80,
                 ),
                 const SizedBox(height: 12),
-                Text(
+                const Text(
                   'Đăng nhập',
                   style: TextStyles.heading1,
                 ),
                 const SizedBox(height: 8),
-                Text(
+                const Text(
                   'Chào mừng đến với ứng dụng COKA',
                   style: TextStyles.body,
                 ),
@@ -197,7 +197,7 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     RichText(
-                      text: TextSpan(
+                      text: const TextSpan(
                         style: TextStyles.label,
                         children: [
                           TextSpan(
@@ -314,7 +314,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Row(
         children: [
           if (isLoading)
-            SizedBox(
+            const SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(

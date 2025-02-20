@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../providers/team_provider.dart';
 import '../../../../../shared/widgets/avatar_widget.dart';
-import '../../../../../shared/widgets/custom_expansion_title.dart';
 import '../../../../../shared/widgets/search_bar.dart';
 import '../../../../../models/find_child.dart';
 

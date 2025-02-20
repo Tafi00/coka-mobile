@@ -85,8 +85,8 @@ class _WorkspaceListState extends State<WorkspaceList> {
         builder: (context, scrollController) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: Text(
                 'Không gian làm việc',
                 style: TextStyles.title,
@@ -131,7 +131,7 @@ class _WorkspaceListState extends State<WorkspaceList> {
                 children: [
                   Text(
                     workspace['name'] ?? 'Không có tên',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.text,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -140,7 +140,7 @@ class _WorkspaceListState extends State<WorkspaceList> {
                   const SizedBox(height: 1),
                   Text(
                     '${workspace['totalMember']} thành viên',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 10,
                       color: AppColors.textTertiary,
                     ),
@@ -156,7 +156,7 @@ class _WorkspaceListState extends State<WorkspaceList> {
               ),
               child: Text(
                 '${workspace['totalContact']}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
@@ -307,8 +307,8 @@ class _WorkspaceListState extends State<WorkspaceList> {
                 ),
                 InkWell(
                   onTap: _showAllWorkspaces,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -320,7 +320,7 @@ class _WorkspaceListState extends State<WorkspaceList> {
                             fontWeight: FontWeight.w400,
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right,
                           color: AppColors.primary,
                         ),
@@ -340,8 +340,8 @@ class _WorkspaceListState extends State<WorkspaceList> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
           child: Text(
             'Không gian làm việc',
             style: TextStyle(

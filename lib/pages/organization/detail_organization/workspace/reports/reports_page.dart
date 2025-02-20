@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:coka_mobile/providers/report_provider.dart';
-import 'package:coka_mobile/shared/widgets/loading_indicator.dart';
+import 'package:coka/providers/report_provider.dart';
+import 'package:coka/shared/widgets/loading_indicator.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class ChartModel {
@@ -283,7 +283,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           SizedBox(
             height: 300,
             child: SfCartesianChart(
-              primaryXAxis: CategoryAxis(),
+              primaryXAxis: const CategoryAxis(),
               series: <CartesianSeries<ChartModel, String>>[
                 StackedColumnSeries<ChartModel, String>(
                   dataSource: formData,

@@ -138,7 +138,7 @@ class _ImportContactBottomSheetState
       formData.fields.addAll([
         MapEntry("fullName", contact.displayName),
         MapEntry("phone", formattedPhone),
-        MapEntry("sourceId", "ce7f42cf-f10f-49d2-b57e-0c75f8463c82"),
+        const MapEntry("sourceId", "ce7f42cf-f10f-49d2-b57e-0c75f8463c82"),
       ]);
 
       final response = await _customerRepository.createCustomer(

@@ -152,7 +152,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         Container(
                           width: 80,
                           height: 80,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.backgroundSecondary,
                             shape: BoxShape.circle,
                           ),
@@ -165,7 +165,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                                     fit: BoxFit.cover,
                                   ),
                                 )
-                              : Icon(
+                              : const Icon(
                                   Icons.person_outline,
                                   size: 40,
                                   color: AppColors.text,
@@ -181,7 +181,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.grey.shade300),
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.camera_alt_outlined,
                               size: 20,
                               color: AppColors.text,
@@ -255,7 +255,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'Giới Tính',
                   style: TextStyles.body,
                 ),

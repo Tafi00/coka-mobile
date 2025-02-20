@@ -5,7 +5,6 @@ import 'package:flutter_html_audio/flutter_html_audio.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../../../../shared/widgets/avatar_widget.dart';
 
 String getIconPath(type, isSource) {
   if (isSource) {
@@ -306,8 +305,8 @@ class JourneyItem extends StatelessWidget {
                                             }
                                           }
                                         },
-                                        extensions: [
-                                          const AudioHtmlExtension(),
+                                        extensions: const [
+                                          AudioHtmlExtension(),
                                         ],
                                         style: {
                                           "body": Style(margin: Margins.zero),

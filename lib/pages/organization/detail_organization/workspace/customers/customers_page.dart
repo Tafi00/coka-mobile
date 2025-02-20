@@ -251,7 +251,7 @@ class _CustomersPageState extends State<CustomersPage>
         child: Row(
           children: [
             const SizedBox(width: 12),
-            Icon(Icons.search, color: AppColors.text, size: 20),
+            const Icon(Icons.search, color: AppColors.text, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -495,7 +495,7 @@ class _CustomersPageState extends State<CustomersPage>
             preferredSize: const Size.fromHeight(100),
             child: Column(
               children: [
-                Divider(
+                const Divider(
                   thickness: 0.2,
                   height: 1,
                 ),
@@ -513,7 +513,7 @@ class _CustomersPageState extends State<CustomersPage>
               stageGroupId = AppConstants.stageObject.entries
                   .firstWhere(
                     (entry) => entry.value['name'] == config.name,
-                    orElse: () => MapEntry('', {}),
+                    orElse: () => const MapEntry('', {}),
                   )
                   .key;
 

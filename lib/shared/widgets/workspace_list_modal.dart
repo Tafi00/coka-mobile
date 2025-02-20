@@ -219,7 +219,7 @@ class _WorkspaceListModalState extends State<WorkspaceListModal> {
                     const SizedBox(height: 1),
                     Text(
                       '${workspace['totalMember']} thành viên',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 10,
                         color: AppColors.textTertiary,
                       ),
@@ -237,7 +237,7 @@ class _WorkspaceListModalState extends State<WorkspaceListModal> {
                 ),
                 child: Text(
                   '${workspace['totalContact']}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -245,7 +245,7 @@ class _WorkspaceListModalState extends State<WorkspaceListModal> {
                 ),
               ),
             if (isSelected)
-              Icon(Icons.check, color: AppColors.primary, size: 20),
+              const Icon(Icons.check, color: AppColors.primary, size: 20),
           ],
         ),
       ),
@@ -257,8 +257,8 @@ class _WorkspaceListModalState extends State<WorkspaceListModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
           child: Text(
             'Chọn không gian làm việc',
             style: TextStyle(

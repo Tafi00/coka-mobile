@@ -300,7 +300,7 @@ class _CustomersListState extends ConsumerState<CustomersList> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                const Text(
                   'Có lỗi xảy ra khi tải danh sách khách hàng',
                   style: TextStyle(
                     color: AppColors.text,
@@ -315,7 +315,7 @@ class _CustomersListState extends ConsumerState<CustomersList> {
                     });
                     _pagingController.refresh();
                   },
-                  child: Text(
+                  child: const Text(
                     'Thử lại',
                     style: TextStyle(
                       color: AppColors.primary,

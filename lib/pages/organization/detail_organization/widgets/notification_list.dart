@@ -127,8 +127,8 @@ class _NotificationListState extends State<NotificationList> {
         builder: (context, scrollController) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: Text(
                 'Cập nhật mới nhất',
                 style: TextStyles.title,
@@ -147,7 +147,7 @@ class _NotificationListState extends State<NotificationList> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
+                        const Text(
                           'Có lỗi xảy ra khi tải thông báo',
                           style: TextStyle(
                             color: AppColors.text,
@@ -157,7 +157,7 @@ class _NotificationListState extends State<NotificationList> {
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: () => _pagingController.refresh(),
-                          child: Text(
+                          child: const Text(
                             'Thử lại',
                             style: TextStyle(
                               color: AppColors.primary,
@@ -280,7 +280,7 @@ class _NotificationListState extends State<NotificationList> {
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 text: TextSpan(
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.text,
                   ),
@@ -291,7 +291,7 @@ class _NotificationListState extends State<NotificationList> {
             const SizedBox(width: 16),
             Text(
               timeAgo,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 10,
                 color: AppColors.textTertiary,
               ),
@@ -426,8 +426,8 @@ class _NotificationListState extends State<NotificationList> {
                 ),
                 InkWell(
                   onTap: _showAllNotifications,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -439,7 +439,7 @@ class _NotificationListState extends State<NotificationList> {
                             fontWeight: FontWeight.w400,
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right,
                           color: AppColors.primary,
                         ),
@@ -459,8 +459,8 @@ class _NotificationListState extends State<NotificationList> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
           child: Text(
             'Cập nhật mới nhất',
             style: TextStyle(

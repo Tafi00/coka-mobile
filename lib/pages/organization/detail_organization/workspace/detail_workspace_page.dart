@@ -79,7 +79,7 @@ class _DetailWorkspacePageState extends State<DetailWorkspacePage> {
                   break;
               }
             },
-            destinations: [
+            destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.people_outline, color: AppColors.textTertiary),
                 selectedIcon: Icon(Icons.people, color: AppColors.primary),
