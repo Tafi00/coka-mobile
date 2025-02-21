@@ -16,19 +16,18 @@ class FacebookMessagesTab extends ConsumerStatefulWidget {
       _FacebookMessagesTabState();
 }
 
-class _FacebookMessagesTabState extends ConsumerState<FacebookMessagesTab> {
+class _FacebookMessagesTabState extends ConsumerState<FacebookMessagesTab>
+    with AutomaticKeepAliveClientMixin {
   final _scrollController = ScrollController();
+  bool _isFirstBuild = true;
+
+  @override
+  bool get wantKeepAlive => false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    Future.microtask(() {
-      ref.read(messageProvider.notifier).fetchConversations(
-            widget.organizationId,
-            provider: 'FACEBOOK',
-          );
-    });
   }
 
   @override
@@ -40,11 +39,10 @@ class _FacebookMessagesTabState extends ConsumerState<FacebookMessagesTab> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.8) {
-      final state = ref.read(messageProvider);
+      final state = ref.read(facebookMessageProvider);
       if (!state.isLoading && state.hasMore) {
-        ref.read(messageProvider.notifier).fetchConversations(
+        ref.read(facebookMessageProvider.notifier).fetchConversations(
               widget.organizationId,
-              provider: 'FACEBOOK',
             );
       }
     }
@@ -52,40 +50,81 @@ class _FacebookMessagesTabState extends ConsumerState<FacebookMessagesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(messageProvider);
+    super.build(context);
+
+    // Reset và fetch lại data khi tab được focus
+    if (_isFirstBuild) {
+      _isFirstBuild = false;
+      Future.microtask(() {
+        ref.read(facebookMessageProvider.notifier).reset();
+        ref.read(facebookMessageProvider.notifier).fetchConversations(
+              widget.organizationId,
+              forceRefresh: true,
+            );
+      });
+    }
+
+    final state = ref.watch(facebookMessageProvider);
 
     if (state.isLoading && state.conversations.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (!state.isLoading && state.conversations.isEmpty) {
-      return const Center(child: Text('Không có tin nhắn Facebook nào'));
+      return RefreshIndicator(
+        onRefresh: () async {
+          ref.read(facebookMessageProvider.notifier).reset();
+          await ref.read(facebookMessageProvider.notifier).fetchConversations(
+                widget.organizationId,
+                forceRefresh: true,
+              );
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            Center(
+              child: Padding(
+                padding: EdgeInsets.only(top: 100),
+                child: Text('Không có tin nhắn Facebook nào'),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: state.conversations.length + (state.hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == state.conversations.length) {
-          return state.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : const SizedBox();
-        }
-
-        final conversation = state.conversations[index];
-        return MessageItem(
-          sender: conversation.personName,
-          content: conversation.snippet,
-          time: conversation.updatedTime.toString(),
-          platform: conversation.provider,
-          onTap: () {
-            ref
-                .read(messageProvider.notifier)
-                .selectConversation(conversation.id);
-            // TODO: Navigate to chat detail
-          },
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.read(facebookMessageProvider.notifier).reset();
+        await ref.read(facebookMessageProvider.notifier).fetchConversations(
+              widget.organizationId,
+              forceRefresh: true,
+            );
       },
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        controller: _scrollController,
+        itemCount: state.conversations.length + (state.hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == state.conversations.length) {
+            return state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : const SizedBox();
+          }
+
+          final conversation = state.conversations[index];
+          return MessageItem(
+            id: conversation.id,
+            organizationId: widget.organizationId,
+            sender: conversation.personName,
+            content: conversation.snippet,
+            time: conversation.updatedTime.toIso8601String(),
+            platform: conversation.provider,
+            avatar: conversation.personAvatar,
+            pageAvatar: conversation.pageAvatar,
+          );
+        },
+      ),
     );
   }
 }

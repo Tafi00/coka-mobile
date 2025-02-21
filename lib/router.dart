@@ -5,8 +5,8 @@ import 'pages/auth/complete_profile_page.dart';
 import 'pages/organization/organization_page.dart';
 import 'pages/organization/detail_organization/detail_organization_page.dart';
 import 'pages/organization/messages/messages_page.dart';
-import 'pages/organization/messages/message_detail_page.dart';
 import 'pages/organization/messages/message_settings_page.dart';
+import 'pages/organization/messages/chat_detail_page.dart';
 import 'pages/organization/campaigns/campaigns_page.dart';
 import 'pages/organization/campaigns/multiconnect_page.dart';
 import 'pages/organization/campaigns/aichatbot_page.dart';
@@ -31,6 +31,19 @@ final appRoutes = [
   GoRoute(
     path: '/complete-profile',
     builder: (context, state) => const CompleteProfilePage(),
+  ),
+
+  // Chat detail route (đặt trước ShellRoute để ưu tiên match)
+  GoRoute(
+    path: '/organization/:organizationId/messages/detail/:conversationId',
+    builder: (context, state) {
+      final organizationId = state.pathParameters['organizationId']!;
+      final conversationId = state.pathParameters['conversationId']!;
+      return ChatDetailPage(
+        organizationId: organizationId,
+        conversationId: conversationId,
+      );
+    },
   ),
 
   // Organization routes with shell
@@ -63,17 +76,6 @@ final appRoutes = [
             builder: (context, state) {
               final organizationId = state.pathParameters['organizationId']!;
               return MessageSettingsPage(organizationId: organizationId);
-            },
-          ),
-          GoRoute(
-            path: ':roomId',
-            builder: (context, state) {
-              final organizationId = state.pathParameters['organizationId']!;
-              final roomId = state.pathParameters['roomId']!;
-              return MessageDetailPage(
-                organizationId: organizationId,
-                roomId: roomId,
-              );
             },
           ),
         ],

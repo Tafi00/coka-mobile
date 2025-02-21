@@ -11,7 +11,20 @@ final messageRepositoryProvider = Provider<MessageRepository>((ref) {
   return MessageRepository(apiClient);
 });
 
-final messageProvider =
+// Provider riêng cho từng loại tin nhắn
+final zaloMessageProvider =
+    StateNotifierProvider<MessageNotifier, MessageState>((ref) {
+  final repository = ref.watch(messageRepositoryProvider);
+  return MessageNotifier(repository, 'ZALO');
+});
+
+final facebookMessageProvider =
+    StateNotifierProvider<MessageNotifier, MessageState>((ref) {
+  final repository = ref.watch(messageRepositoryProvider);
+  return MessageNotifier(repository, 'FACEBOOK');
+});
+
+final allMessageProvider =
     StateNotifierProvider<MessageNotifier, MessageState>((ref) {
   final repository = ref.watch(messageRepositoryProvider);
   return MessageNotifier(repository);
@@ -24,6 +37,7 @@ class MessageState {
   final int page;
   final bool hasMore;
   final String? searchText;
+  final String? provider;
 
   MessageState({
     this.isLoading = false,
@@ -32,6 +46,7 @@ class MessageState {
     this.page = 0,
     this.hasMore = true,
     this.searchText,
+    this.provider,
   });
 
   MessageState copyWith({
@@ -41,6 +56,7 @@ class MessageState {
     int? page,
     bool? hasMore,
     String? searchText,
+    String? provider,
   }) {
     return MessageState(
       isLoading: isLoading ?? this.isLoading,
@@ -49,6 +65,7 @@ class MessageState {
       page: page ?? this.page,
       hasMore: hasMore ?? this.hasMore,
       searchText: searchText ?? this.searchText,
+      provider: provider ?? this.provider,
     );
   }
 }
@@ -118,67 +135,117 @@ class Conversation {
   }
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
-    return Conversation(
-      id: json['id'],
-      pageId: json['pageId'],
-      pageName: json['pageName'],
-      pageAvatar: json['pageAvatar'],
-      personId: json['personId'],
-      personName: json['personName'],
-      personAvatar: json['personAvatar'],
-      snippet: json['snippet'],
-      canReply: json['canReply'] ?? false,
-      updatedTime: DateTime.parse(json['updatedTime']),
-      gptStatus: json['gptStatus'] ?? 0,
-      isRead: json['isRead'] ?? false,
-      type: json['type'] ?? 'MESSAGE',
-      provider: json['provider'] ?? 'ZALO',
-      status: json['status'] ?? '',
-      assignName: json['assignName'],
-      assignAvatar: json['assignAvatar'],
-    );
+    try {
+      // Convert timestamp to DateTime
+      final timestamp = json['updatedTime'] is int
+          ? json['updatedTime']
+          : int.tryParse(json['updatedTime']?.toString() ?? '') ??
+              DateTime.now().millisecondsSinceEpoch;
+
+      return Conversation(
+        id: json['id']?.toString() ?? '',
+        pageId: json['pageId']?.toString() ?? '',
+        pageName: json['pageName']?.toString() ?? '',
+        pageAvatar: json['pageAvatar']?.toString(),
+        personId: json['personId']?.toString() ?? '',
+        personName: json['personName']?.toString() ?? '',
+        personAvatar: json['personAvatar']?.toString(),
+        snippet: json['snippet']?.toString() ?? '',
+        canReply: json['canReply'] ?? false,
+        updatedTime: DateTime.fromMillisecondsSinceEpoch(timestamp),
+        gptStatus: json['gptStatus'] is int ? json['gptStatus'] : 0,
+        isRead: json['isRead'] ?? false,
+        type: json['type']?.toString() ?? 'MESSAGE',
+        provider: json['provider']?.toString() ?? 'ZALO',
+        status: json['status']?.toString() ?? '',
+        assignName: json['assignName']?.toString(),
+        assignAvatar: json['assignAvatar']?.toString(),
+      );
+    } catch (e) {
+      print('Error parsing conversation: $json');
+      print('Error: $e');
+      rethrow;
+    }
   }
 }
 
 class MessageNotifier extends StateNotifier<MessageState> {
   final MessageRepository _repository;
+  final String? _defaultProvider;
 
-  MessageNotifier(this._repository) : super(MessageState());
+  MessageNotifier(this._repository, [this._defaultProvider])
+      : super(MessageState(provider: _defaultProvider));
+
+  void reset() {
+    state = MessageState(provider: _defaultProvider);
+  }
 
   Future<void> fetchConversations(String organizationId,
-      {String? provider}) async {
+      {String? provider, bool forceRefresh = false}) async {
     if (state.isLoading) return;
 
-    state = state.copyWith(isLoading: true);
+    final currentProvider = provider ?? _defaultProvider;
+
+    // Reset state nếu là lần fetch đầu tiên hoặc forceRefresh
+    if (state.page == 0 || forceRefresh) {
+      state = MessageState(
+        isLoading: true,
+        provider: currentProvider,
+      );
+    } else {
+      state = state.copyWith(isLoading: true);
+    }
 
     try {
       final response = await _repository.getConversationList(
         organizationId,
-        page: state.page,
-        provider: provider,
+        page: forceRefresh ? 0 : state.page,
+        provider: currentProvider,
       );
 
       final List<Conversation> conversations = (response['content'] as List)
           .map((item) => Conversation.fromJson(item))
           .toList();
 
-      state = state.copyWith(
-        conversations: [...state.conversations, ...conversations],
-        isLoading: false,
-        hasMore: conversations.length >= 20,
-        page: state.page + 1,
-      );
+      if (forceRefresh || state.page == 0) {
+        state = state.copyWith(
+          conversations: conversations,
+          isLoading: false,
+          hasMore: conversations.length >= 20,
+          page: 1,
+        );
+      } else {
+        state = state.copyWith(
+          conversations: [...state.conversations, ...conversations],
+          isLoading: false,
+          hasMore: conversations.length >= 20,
+          page: state.page + 1,
+        );
+      }
     } catch (e) {
+      print(e);
       state = state.copyWith(isLoading: false);
     }
   }
 
-  void selectConversation(String conversationId) {
-    final conversation = state.conversations.firstWhere(
-      (conv) => conv.id == conversationId,
-      orElse: () => state.selectedConversation!,
+  void clearConversations() {
+    state = state.copyWith(
+      conversations: [],
+      page: 0,
+      hasMore: true,
+      selectedConversation: null,
     );
-    state = state.copyWith(selectedConversation: conversation);
+  }
+
+  void selectConversation(String conversationId) {
+    try {
+      final conversation = state.conversations.firstWhere(
+        (conv) => conv.id == conversationId,
+      );
+      state = state.copyWith(selectedConversation: conversation);
+    } catch (_) {
+      // Không làm gì nếu không tìm thấy conversation
+    }
   }
 
   Future<void> assignConversation(
