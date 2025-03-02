@@ -2,64 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/repositories/report_repository.dart';
 import '../api/api_client.dart';
 
-final reportSummaryProvider = StateNotifierProvider.family<
-    ReportSummaryNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportParams>((ref, params) {
-  return ReportSummaryNotifier(ReportRepository(ApiClient()), params);
-});
+// Provider để kiểm soát việc load dữ liệu
+final shouldLoadReportsProvider = StateProvider<bool>((ref) => false);
 
-final reportStatisticsByUtmSourceProvider = StateNotifierProvider.family<
-    ReportStatisticsByUtmSourceNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportParams>((ref, params) {
-  return ReportStatisticsByUtmSourceNotifier(
-      ReportRepository(ApiClient()), params);
-});
+// Cache key để quản lý việc invalidate cache
+final _cacheKeyProvider = StateProvider<int>((ref) => 0);
 
-final reportStatisticsByDataSourceProvider = StateNotifierProvider.family<
-    ReportStatisticsByDataSourceNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportParams>((ref, params) {
-  return ReportStatisticsByDataSourceNotifier(
-      ReportRepository(ApiClient()), params);
-});
-
-final reportStatisticsByTagProvider = StateNotifierProvider.family<
-    ReportStatisticsByTagNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportParams>((ref, params) {
-  return ReportStatisticsByTagNotifier(ReportRepository(ApiClient()), params);
-});
-
-final reportChartByOverTimeProvider = StateNotifierProvider.family<
-    ReportChartByOverTimeNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportOverTimeParams>((ref, params) {
-  return ReportChartByOverTimeNotifier(ReportRepository(ApiClient()), params);
-});
-
-final reportChartByRatingProvider = StateNotifierProvider.family<
-    ReportChartByRatingNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportParams>((ref, params) {
-  return ReportChartByRatingNotifier(ReportRepository(ApiClient()), params);
-});
-
-final reportStatisticsByUserProvider = StateNotifierProvider.family<
-    ReportStatisticsByUserNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportParams>((ref, params) {
-  return ReportStatisticsByUserNotifier(ReportRepository(ApiClient()), params);
-});
-
-final reportStatisticsByStageGroupProvider = StateNotifierProvider.family<
-    ReportStatisticsByStageGroupNotifier,
-    AsyncValue<Map<String, dynamic>>,
-    ReportStageGroupParams>((ref, params) {
-  return ReportStatisticsByStageGroupNotifier(
-      ReportRepository(ApiClient()), params);
-});
+// Provider để lưu trữ params hiện tại
+final reportParamsProvider = StateProvider<ReportParams?>((ref) => null);
 
 class ReportParams {
   final String organizationId;
@@ -73,6 +23,13 @@ class ReportParams {
     required this.startDate,
     required this.endDate,
   });
+
+  Map<String, String> toQueryParameters() {
+    return {
+      'startDate': startDate,
+      'endDate': endDate,
+    };
+  }
 }
 
 class ReportOverTimeParams extends ReportParams {
@@ -85,7 +42,179 @@ class ReportOverTimeParams extends ReportParams {
     required super.endDate,
     required this.type,
   });
+
+  @override
+  Map<String, String> toQueryParameters() {
+    return {
+      ...super.toQueryParameters(),
+      'Type': type,
+    };
+  }
 }
+
+final reportSummaryProvider =
+    FutureProvider.family<Map<String, dynamic>, ReportParams>(
+  (ref, params) async {
+    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    print('reportSummaryProvider - shouldLoad: $shouldLoad');
+    if (!shouldLoad) {
+      print(
+          'reportSummaryProvider - Skipping API call because shouldLoad is false');
+      return {'content': [], 'metadata': {}};
+    }
+
+    try {
+      print('reportSummaryProvider - Starting API call');
+      print(
+          'reportSummaryProvider - Params: organizationId: ${params.organizationId}, workspaceId: ${params.workspaceId}');
+      final repository = ReportRepository(ApiClient());
+      final response = await repository.getSummaryData(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+      print('reportSummaryProvider - API call successful');
+      return response;
+    } catch (e, stack) {
+      print('reportSummaryProvider - API error: $e');
+      print('reportSummaryProvider - Stack trace: $stack');
+      rethrow;
+    }
+  },
+);
+
+final reportStatisticsByUtmSourceProvider =
+    FutureProvider.family<Map<String, dynamic>, ReportParams>(
+  (ref, params) async {
+    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    print('reportStatisticsByUtmSourceProvider - shouldLoad: $shouldLoad');
+    if (!shouldLoad) {
+      return {'content': [], 'metadata': {}};
+    }
+
+    try {
+      print('reportStatisticsByUtmSourceProvider - Starting API call');
+      final repository = ReportRepository(ApiClient());
+      final response = await repository.getStatisticsByUtmSource(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+      print('reportStatisticsByUtmSourceProvider - API call successful');
+      return response;
+    } catch (e, stack) {
+      print('reportStatisticsByUtmSourceProvider - API error: $e');
+      print('reportStatisticsByUtmSourceProvider - Stack trace: $stack');
+      rethrow;
+    }
+  },
+);
+
+final reportStatisticsByDataSourceProvider =
+    FutureProvider.family<Map<String, dynamic>, ReportParams>(
+  (ref, params) async {
+    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    if (!shouldLoad) {
+      return {'content': [], 'metadata': {}};
+    }
+
+    final repository = ReportRepository(ApiClient());
+    final response = await repository.getStatisticsByDataSource(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+    return response;
+  },
+);
+
+final reportStatisticsByTagProvider =
+    FutureProvider.family<Map<String, dynamic>, ReportParams>(
+  (ref, params) async {
+    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    if (!shouldLoad) {
+      return {'content': [], 'metadata': {}};
+    }
+
+    final repository = ReportRepository(ApiClient());
+    final response = await repository.getStatisticsByTag(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+    return response;
+  },
+);
+
+final reportChartByOverTimeProvider =
+    FutureProvider.family<Map<String, dynamic>, ReportOverTimeParams>(
+  (ref, params) async {
+    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    if (!shouldLoad) {
+      return {'content': [], 'metadata': {}};
+    }
+
+    final repository = ReportRepository(ApiClient());
+    final response = await repository.getChartByOverTime(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+      params.type,
+    );
+    return response;
+  },
+);
+
+final reportChartByRatingProvider =
+    FutureProvider.family<Map<String, dynamic>, ReportParams>(
+  (ref, params) async {
+    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    if (!shouldLoad) {
+      return {'content': [], 'metadata': {}};
+    }
+
+    final repository = ReportRepository(ApiClient());
+    final response = await repository.getChartByRating(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+    return response;
+  },
+);
+
+final reportStatisticsByUserProvider =
+    FutureProvider.family<Map<String, dynamic>, ReportParams>(
+  (ref, params) async {
+    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    if (!shouldLoad) {
+      return {'content': [], 'metadata': {}};
+    }
+
+    final repository = ReportRepository(ApiClient());
+    final response = await repository.getStatisticsByUser(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+    return response;
+  },
+);
+
+final reportStatisticsByStageGroupProvider = StateNotifierProvider.family<
+    ReportStatisticsByStageGroupNotifier,
+    AsyncValue<Map<String, dynamic>>,
+    ReportStageGroupParams>((ref, params) {
+  return ReportStatisticsByStageGroupNotifier(
+      ReportRepository(ApiClient()), params, ref);
+});
 
 class ReportStageGroupParams {
   final String organizationId;
@@ -99,197 +228,22 @@ class ReportStageGroupParams {
   });
 }
 
-class ReportSummaryNotifier
-    extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  final ReportRepository _reportRepository;
-  final ReportParams _params;
-
-  ReportSummaryNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchSummaryData();
-  }
-
-  Future<void> fetchSummaryData() async {
-    try {
-      state = const AsyncValue.loading();
-      final response = await _reportRepository.getSummaryData(
-        _params.organizationId,
-        _params.workspaceId,
-        _params.startDate,
-        _params.endDate,
-      );
-      state = AsyncValue.data(response);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
-class ReportStatisticsByUtmSourceNotifier
-    extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  final ReportRepository _reportRepository;
-  final ReportParams _params;
-
-  ReportStatisticsByUtmSourceNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchStatisticsByUtmSource();
-  }
-
-  Future<void> fetchStatisticsByUtmSource() async {
-    try {
-      state = const AsyncValue.loading();
-      final response = await _reportRepository.getStatisticsByUtmSource(
-        _params.organizationId,
-        _params.workspaceId,
-        _params.startDate,
-        _params.endDate,
-      );
-      state = AsyncValue.data(response);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
-class ReportStatisticsByDataSourceNotifier
-    extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  final ReportRepository _reportRepository;
-  final ReportParams _params;
-
-  ReportStatisticsByDataSourceNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchStatisticsByDataSource();
-  }
-
-  Future<void> fetchStatisticsByDataSource() async {
-    try {
-      state = const AsyncValue.loading();
-      final response = await _reportRepository.getStatisticsByDataSource(
-        _params.organizationId,
-        _params.workspaceId,
-        _params.startDate,
-        _params.endDate,
-      );
-      state = AsyncValue.data(response);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
-class ReportStatisticsByTagNotifier
-    extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  final ReportRepository _reportRepository;
-  final ReportParams _params;
-
-  ReportStatisticsByTagNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchStatisticsByTag();
-  }
-
-  Future<void> fetchStatisticsByTag() async {
-    try {
-      state = const AsyncValue.loading();
-      final response = await _reportRepository.getStatisticsByTag(
-        _params.organizationId,
-        _params.workspaceId,
-        _params.startDate,
-        _params.endDate,
-      );
-      state = AsyncValue.data(response);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
-class ReportChartByOverTimeNotifier
-    extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  final ReportRepository _reportRepository;
-  final ReportOverTimeParams _params;
-
-  ReportChartByOverTimeNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchChartByOverTime();
-  }
-
-  Future<void> fetchChartByOverTime() async {
-    try {
-      state = const AsyncValue.loading();
-      final response = await _reportRepository.getChartByOverTime(
-        _params.organizationId,
-        _params.workspaceId,
-        _params.startDate,
-        _params.endDate,
-        _params.type,
-      );
-      state = AsyncValue.data(response);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
-class ReportChartByRatingNotifier
-    extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  final ReportRepository _reportRepository;
-  final ReportParams _params;
-
-  ReportChartByRatingNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchChartByRating();
-  }
-
-  Future<void> fetchChartByRating() async {
-    try {
-      state = const AsyncValue.loading();
-      final response = await _reportRepository.getChartByRating(
-        _params.organizationId,
-        _params.workspaceId,
-        _params.startDate,
-        _params.endDate,
-      );
-      state = AsyncValue.data(response);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
-class ReportStatisticsByUserNotifier
-    extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  final ReportRepository _reportRepository;
-  final ReportParams _params;
-
-  ReportStatisticsByUserNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchStatisticsByUser();
-  }
-
-  Future<void> fetchStatisticsByUser() async {
-    try {
-      state = const AsyncValue.loading();
-      final response = await _reportRepository.getStatisticsByUser(
-        _params.organizationId,
-        _params.workspaceId,
-        _params.startDate,
-        _params.endDate,
-      );
-      state = AsyncValue.data(response);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
 class ReportStatisticsByStageGroupNotifier
     extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
   final ReportRepository _reportRepository;
   final ReportStageGroupParams _params;
+  final Ref _ref;
 
-  ReportStatisticsByStageGroupNotifier(this._reportRepository, this._params)
-      : super(const AsyncValue.loading()) {
-    fetchStatisticsByStageGroup();
+  ReportStatisticsByStageGroupNotifier(
+    this._reportRepository,
+    this._params,
+    this._ref,
+  ) : super(const AsyncValue.loading()) {
+    _ref.listen(shouldLoadReportsProvider, (previous, next) {
+      if (next) {
+        fetchStatisticsByStageGroup();
+      }
+    });
   }
 
   Future<void> fetchStatisticsByStageGroup() async {
@@ -306,3 +260,97 @@ class ReportStatisticsByStageGroupNotifier
     }
   }
 }
+
+// Provider chính để lấy dữ liệu báo cáo
+final reportDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final params = ref.watch(reportParamsProvider);
+
+  if (params == null) {
+    return {
+      'summary': {'content': [], 'metadata': {}},
+      'utmSource': {'content': [], 'metadata': {}},
+      'dataSource': {'content': [], 'metadata': {}},
+      'tag': {'content': [], 'metadata': {}},
+      'rating': {'content': [], 'metadata': {}},
+      'user': {'content': [], 'metadata': {}},
+    };
+  }
+
+  try {
+    print('reportDataProvider - Starting API calls with params:');
+    print('organizationId: ${params.organizationId}');
+    print('workspaceId: ${params.workspaceId}');
+    print('startDate: ${params.startDate}');
+    print('endDate: ${params.endDate}');
+
+    final repository = ReportRepository(ApiClient());
+
+    // Cache các future để tránh gọi API nhiều lần
+    final summaryFuture = repository.getSummaryData(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+
+    final utmSourceFuture = repository.getStatisticsByUtmSource(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+
+    final dataSourceFuture = repository.getStatisticsByDataSource(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+
+    final tagFuture = repository.getStatisticsByTag(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+
+    final ratingFuture = repository.getChartByRating(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+
+    final userFuture = repository.getStatisticsByUser(
+      params.organizationId,
+      params.workspaceId,
+      params.startDate,
+      params.endDate,
+    );
+
+    // Thực hiện tất cả các API calls song song
+    final results = await Future.wait([
+      summaryFuture,
+      utmSourceFuture,
+      dataSourceFuture,
+      tagFuture,
+      ratingFuture,
+      userFuture,
+    ]);
+
+    print('reportDataProvider - All API calls completed successfully');
+
+    return {
+      'summary': results[0],
+      'utmSource': results[1],
+      'dataSource': results[2],
+      'tag': results[3],
+      'rating': results[4],
+      'user': results[5],
+    };
+  } catch (e, stack) {
+    print('reportDataProvider - Error occurred: $e');
+    print('reportDataProvider - Stack trace: $stack');
+    rethrow;
+  }
+});

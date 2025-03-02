@@ -297,7 +297,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                   ),
                   const SizedBox(width: 4),
                   Expanded(
-                    child: Container(
+                    child: SizedBox(
                       height: 32,
                       child: Stack(
                         children: [
@@ -355,7 +355,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                               filled: true,
                               fillColor: Theme.of(context)
                                   .colorScheme
-                                  .surfaceVariant
+                                  .surfaceContainerHighest
                                   .withOpacity(0.3),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -429,8 +429,8 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor = const Color(0xFFF1F5F9);
-    final textColor = Colors.black;
+    const bubbleColor = Color(0xFFF1F5F9);
+    const textColor = Colors.black;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
@@ -581,7 +581,7 @@ class _MessageBubble extends StatelessWidget {
                               style: TextButton.styleFrom(
                                 backgroundColor: Theme.of(context)
                                     .colorScheme
-                                    .surfaceVariant,
+                                    .surfaceContainerHighest,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),

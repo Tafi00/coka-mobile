@@ -450,7 +450,7 @@ class _CustomersPageState extends State<CustomersPage>
         params['searchText'] = _searchQuery;
       }
 
-      developer.log(
+      print(
           "Fetching customer counts with params: ${params.toQueryParameters()}");
 
       final response = await _reportRepository.getStatisticsByStageGroup(
@@ -471,6 +471,7 @@ class _CustomersPageState extends State<CustomersPage>
         _customerCounts['Tất cả'] = total;
       });
     } catch (e) {
+      print(e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -531,6 +532,7 @@ class _CustomersPageState extends State<CustomersPage>
                 limit: 20,
                 stageGroupId: stageGroupId,
               ),
+              onRefresh: _fetchCustomerCounts,
             );
           }).toList(),
         ),

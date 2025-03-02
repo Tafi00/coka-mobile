@@ -18,6 +18,7 @@ class CustomersList extends ConsumerStatefulWidget {
   final String? stageGroupId;
   final String? searchQuery;
   final Map<String, dynamic> queryParams;
+  final VoidCallback? onRefresh;
 
   const CustomersList({
     super.key,
@@ -26,6 +27,7 @@ class CustomersList extends ConsumerStatefulWidget {
     this.stageGroupId,
     this.searchQuery,
     required this.queryParams,
+    this.onRefresh,
   });
 
   @override
@@ -86,11 +88,14 @@ class _CustomersListState extends ConsumerState<CustomersList> {
       params['searchText'] = widget.searchQuery;
       params['stageGroupId'] = widget.stageGroupId;
 
-      await ref.read(customerListProvider.notifier).loadCustomers(
-            widget.organizationId,
-            widget.workspaceId,
-            params.map((key, value) => MapEntry(key, value?.toString() ?? '')),
-          );
+      await Future.microtask(() async {
+        await ref.read(customerListProvider.notifier).loadCustomers(
+              widget.organizationId,
+              widget.workspaceId,
+              params
+                  .map((key, value) => MapEntry(key, value?.toString() ?? '')),
+            );
+      });
 
       if (!mounted) return;
 
@@ -275,12 +280,21 @@ class _CustomersListState extends ConsumerState<CustomersList> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to changes in customerListProvider
+    ref.listen(customerListProvider, (previous, next) {
+      if (mounted && !_isFirstLoad) {
+        _pagingController.refresh();
+        widget.onRefresh?.call();
+      }
+    });
+
     return RefreshIndicator(
       onRefresh: () async {
         setState(() {
           _isFirstLoad = true;
         });
         _pagingController.refresh();
+        widget.onRefresh?.call();
       },
       child: PagedListView<int, Map<String, dynamic>>(
         pagingController: _pagingController,
