@@ -445,180 +445,271 @@ class _MessageBubble extends StatelessWidget {
     const bubbleColor = Color(0xFFF1F5F9);
     const textColor = Colors.black;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
-      child: Row(
-        mainAxisAlignment:
-            message.isFromMe ? MainAxisAlignment.start : MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (message.isFromMe) ...[
-            if (showAvatar)
-              AvatarWidget(
-                imgUrl: message.senderAvatar,
-                fallbackText: message.senderName,
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-              ).animate().fadeIn(duration: 300.ms)
-            else
-              const SizedBox(width: 44),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Column(
-              crossAxisAlignment: message.isFromMe
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.end,
-              children: [
-                if (isFirstInTurn && message.isFromMe)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 4),
-                    child: Text(
-                      message.senderName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).hintColor,
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 300.ms),
-                Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.7,
-                  ),
-                  padding: message.attachments?.isNotEmpty == true &&
-                          message.content.isEmpty
-                      ? const EdgeInsets.all(
-                          8) // Padding nhỏ hơn khi chỉ có hình ảnh
-                      : const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: bubbleColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (message.content.isNotEmpty)
-                        Text(
-                          message.content,
+    return Consumer(
+      builder: (context, ref, child) {
+        final chatState = ref.watch(chatProvider);
+        final hasError = chatState.messageErrors.containsKey(message.id);
+        final errorMessage =
+            hasError ? chatState.messageErrors[message.id] : null;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+          child: Row(
+            mainAxisAlignment: message.isFromMe
+                ? MainAxisAlignment.start
+                : MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.isFromMe) ...[
+                if (showAvatar)
+                  AvatarWidget(
+                    imgUrl: message.senderAvatar,
+                    fallbackText: message.senderName,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                  ).animate().fadeIn(duration: 300.ms)
+                else
+                  const SizedBox(width: 44),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: message.isFromMe
+                      ? CrossAxisAlignment.start
+                      : CrossAxisAlignment.end,
+                  children: [
+                    if (isFirstInTurn && message.isFromMe)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 4),
+                        child: Text(
+                          message.senderName,
                           style: TextStyle(
-                            color: textColor,
-                            fontSize: 14,
-                            height: 1.25,
+                            fontSize: 13,
+                            color: Theme.of(context).hintColor,
                           ),
                         ),
-                      if (message.attachments?.isNotEmpty == true) ...[
-                        if (message.content.isNotEmpty)
-                          const SizedBox(height: 8),
-                        ...message.attachments!.map((attachment) {
-                          if (attachment.type.toLowerCase() == 'sticker' ||
-                              attachment.type.toLowerCase().contains('image')) {
-                            return Container(
-                              width: attachment.type.toLowerCase() == 'sticker'
-                                  ? 130
-                                  : 200,
-                              height: attachment.type.toLowerCase() == 'sticker'
-                                  ? 130
-                                  : 200,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.network(
-                                    attachment.url,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                      ).animate().fadeIn(duration: 300.ms),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          child: Container(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * 0.7,
+                            ),
+                            padding: message.attachments?.isNotEmpty == true &&
+                                    message.content.isEmpty
+                                ? const EdgeInsets.all(
+                                    8) // Padding nhỏ hơn khi chỉ có hình ảnh
+                                : const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: bubbleColor,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (message.content.isNotEmpty)
+                                  Text(
+                                    message.content,
+                                    style: const TextStyle(
+                                      color: textColor,
+                                      fontSize: 14,
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                if (message.attachments?.isNotEmpty ==
+                                    true) ...[
+                                  if (message.content.isNotEmpty)
+                                    const SizedBox(height: 8),
+                                  ...message.attachments!.map((attachment) {
+                                    if (attachment.type.toLowerCase() ==
+                                            'sticker' ||
+                                        attachment.type
+                                            .toLowerCase()
+                                            .contains('image')) {
+                                      return Container(
+                                        width: attachment.type.toLowerCase() ==
+                                                'sticker'
+                                            ? 130
+                                            : 200,
+                                        height: attachment.type.toLowerCase() ==
+                                                'sticker'
+                                            ? 130
+                                            : 200,
+                                        margin:
+                                            const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: Stack(
+                                          fit: StackFit.expand,
                                           children: [
-                                            Icon(
-                                              Icons.broken_image_rounded,
-                                              size: 40,
-                                              color:
-                                                  Theme.of(context).hintColor,
+                                            Image.network(
+                                              attachment.url,
+                                              fit: BoxFit.contain,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Center(
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .broken_image_rounded,
+                                                        size: 40,
+                                                        color: Theme.of(context)
+                                                            .hintColor,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        'Hình ảnh không khả dụng',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .hintColor,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                              loadingBuilder: (context, child,
+                                                  loadingProgress) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    value: loadingProgress
+                                                                .expectedTotalBytes !=
+                                                            null
+                                                        ? loadingProgress
+                                                                .cumulativeBytesLoaded /
+                                                            loadingProgress
+                                                                .expectedTotalBytes!
+                                                        : null,
+                                                  ),
+                                                );
+                                              },
                                             ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Hình ảnh không khả dụng',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color:
-                                                    Theme.of(context).hintColor,
+                                            Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () {
+                                                  // TODO: Implement image viewer
+                                                },
                                               ),
                                             ),
                                           ],
                                         ),
-                                      );
-                                    },
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress
-                                                      .expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
-                                              : null,
+                                      ).animate().fadeIn(duration: 300.ms);
+                                    }
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      child: TextButton.icon(
+                                        onPressed: () {},
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
                                         ),
-                                      );
-                                    },
-                                  ),
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () {
-                                        // TODO: Implement image viewer
+                                        icon: const Icon(Icons.attachment),
+                                        label: Text(
+                                          attachment.name ?? 'File đính kèm',
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                    ).animate().fadeIn(duration: 300.ms);
+                                  }),
+                                ],
+                              ],
+                            ),
+                          ).animate().fadeIn(duration: 300.ms).slideX(
+                                begin: message.isFromMe ? 0.3 : -0.3,
+                                end: 0,
+                                duration: 300.ms,
+                                curve: Curves.easeOutCubic,
+                              ),
+                        ),
+                        if (hasError)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 4),
+                            child: GestureDetector(
+                              onTap: () {
+                                // Hiển thị thông báo lỗi
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Lỗi: ${errorMessage ?? 'Không thể gửi tin nhắn'}'),
+                                    action: SnackBarAction(
+                                      label: 'Gửi lại',
+                                      onPressed: () {
+                                        // Gửi lại tin nhắn
+                                        final chatNotifier =
+                                            ref.read(chatProvider.notifier);
+                                        final conversationId =
+                                            message.conversationId;
+                                        final organizationId =
+                                            (context.findAncestorWidgetOfExactType<
+                                                        ChatDetailPage>()
+                                                    as ChatDetailPage)
+                                                .organizationId;
+
+                                        chatNotifier.resendMessage(
+                                          organizationId,
+                                          conversationId,
+                                          message.id,
+                                          message.content,
+                                          attachments: message.attachments
+                                              ?.map((a) => {
+                                                    'type': a.type,
+                                                    'url': a.url,
+                                                    if (a.name != null)
+                                                      'name': a.name,
+                                                    if (a.payload != null)
+                                                      'payload': a.payload,
+                                                  })
+                                              .toList(),
+                                        );
                                       },
                                     ),
                                   ),
-                                ],
-                              ),
-                            ).animate().fadeIn(duration: 300.ms);
-                          }
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: TextButton.icon(
-                              onPressed: () {},
-                              style: TextButton.styleFrom(
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceVariant,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  shape: BoxShape.circle,
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                                child: const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 16,
                                 ),
-                              ),
-                              icon: const Icon(Icons.attachment),
-                              label: Text(
-                                attachment.name ?? 'File đính kèm',
-                                style: const TextStyle(fontSize: 13),
                               ),
                             ),
-                          ).animate().fadeIn(duration: 300.ms);
-                        }),
+                          ),
                       ],
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 300.ms).slideX(
-                      begin: message.isFromMe ? 0.3 : -0.3,
-                      end: 0,
-                      duration: 300.ms,
-                      curve: Curves.easeOutCubic,
                     ),
                   ],
                 ),

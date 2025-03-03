@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/repositories/report_repository.dart';
 import '../api/api_client.dart';
+import '../pages/organization/detail_organization/workspace/reports/components/report_providers.dart';
 
-// Provider để kiểm soát việc load dữ liệu
-final shouldLoadReportsProvider = StateProvider<bool>((ref) => false);
+// Provider để kiểm soát việc load dữ liệu - đã được thay thế bởi reportsPageShouldLoadProvider
+// final shouldLoadReportsProvider = StateProvider<bool>((ref) => false);
 
 // Cache key để quản lý việc invalidate cache
 final _cacheKeyProvider = StateProvider<int>((ref) => 0);
@@ -55,7 +56,7 @@ class ReportOverTimeParams extends ReportParams {
 final reportSummaryProvider =
     FutureProvider.family<Map<String, dynamic>, ReportParams>(
   (ref, params) async {
-    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    final shouldLoad = ref.read(reportsPageShouldLoadProvider);
     print('reportSummaryProvider - shouldLoad: $shouldLoad');
     if (!shouldLoad) {
       print(
@@ -87,7 +88,7 @@ final reportSummaryProvider =
 final reportStatisticsByUtmSourceProvider =
     FutureProvider.family<Map<String, dynamic>, ReportParams>(
   (ref, params) async {
-    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    final shouldLoad = ref.read(reportsPageShouldLoadProvider);
     print('reportStatisticsByUtmSourceProvider - shouldLoad: $shouldLoad');
     if (!shouldLoad) {
       return {'content': [], 'metadata': {}};
@@ -115,7 +116,7 @@ final reportStatisticsByUtmSourceProvider =
 final reportStatisticsByDataSourceProvider =
     FutureProvider.family<Map<String, dynamic>, ReportParams>(
   (ref, params) async {
-    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    final shouldLoad = ref.read(reportsPageShouldLoadProvider);
     if (!shouldLoad) {
       return {'content': [], 'metadata': {}};
     }
@@ -134,7 +135,7 @@ final reportStatisticsByDataSourceProvider =
 final reportStatisticsByTagProvider =
     FutureProvider.family<Map<String, dynamic>, ReportParams>(
   (ref, params) async {
-    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    final shouldLoad = ref.read(reportsPageShouldLoadProvider);
     if (!shouldLoad) {
       return {'content': [], 'metadata': {}};
     }
@@ -153,7 +154,7 @@ final reportStatisticsByTagProvider =
 final reportChartByOverTimeProvider =
     FutureProvider.family<Map<String, dynamic>, ReportOverTimeParams>(
   (ref, params) async {
-    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    final shouldLoad = ref.read(reportsPageShouldLoadProvider);
     if (!shouldLoad) {
       return {'content': [], 'metadata': {}};
     }
@@ -173,7 +174,7 @@ final reportChartByOverTimeProvider =
 final reportChartByRatingProvider =
     FutureProvider.family<Map<String, dynamic>, ReportParams>(
   (ref, params) async {
-    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    final shouldLoad = ref.read(reportsPageShouldLoadProvider);
     if (!shouldLoad) {
       return {'content': [], 'metadata': {}};
     }
@@ -192,7 +193,7 @@ final reportChartByRatingProvider =
 final reportStatisticsByUserProvider =
     FutureProvider.family<Map<String, dynamic>, ReportParams>(
   (ref, params) async {
-    final shouldLoad = ref.read(shouldLoadReportsProvider);
+    final shouldLoad = ref.read(reportsPageShouldLoadProvider);
     if (!shouldLoad) {
       return {'content': [], 'metadata': {}};
     }
@@ -239,7 +240,7 @@ class ReportStatisticsByStageGroupNotifier
     this._params,
     this._ref,
   ) : super(const AsyncValue.loading()) {
-    _ref.listen(shouldLoadReportsProvider, (previous, next) {
+    _ref.listen(reportsPageShouldLoadProvider, (previous, next) {
       if (next) {
         fetchStatisticsByStageGroup();
       }
@@ -264,8 +265,9 @@ class ReportStatisticsByStageGroupNotifier
 // Provider chính để lấy dữ liệu báo cáo
 final reportDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final params = ref.watch(reportParamsProvider);
+  final shouldLoad = ref.watch(reportsPageShouldLoadProvider);
 
-  if (params == null) {
+  if (params == null || !shouldLoad) {
     return {
       'summary': {'content': [], 'metadata': {}},
       'utmSource': {'content': [], 'metadata': {}},
@@ -285,71 +287,93 @@ final reportDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
     final repository = ReportRepository(ApiClient());
 
-    // Cache các future để tránh gọi API nhiều lần
-    final summaryFuture = repository.getSummaryData(
-      params.organizationId,
-      params.workspaceId,
-      params.startDate,
-      params.endDate,
-    );
-
-    final utmSourceFuture = repository.getStatisticsByUtmSource(
-      params.organizationId,
-      params.workspaceId,
-      params.startDate,
-      params.endDate,
-    );
-
-    final dataSourceFuture = repository.getStatisticsByDataSource(
-      params.organizationId,
-      params.workspaceId,
-      params.startDate,
-      params.endDate,
-    );
-
-    final tagFuture = repository.getStatisticsByTag(
-      params.organizationId,
-      params.workspaceId,
-      params.startDate,
-      params.endDate,
-    );
-
-    final ratingFuture = repository.getChartByRating(
-      params.organizationId,
-      params.workspaceId,
-      params.startDate,
-      params.endDate,
-    );
-
-    final userFuture = repository.getStatisticsByUser(
-      params.organizationId,
-      params.workspaceId,
-      params.startDate,
-      params.endDate,
-    );
-
-    // Thực hiện tất cả các API calls song song
-    final results = await Future.wait([
-      summaryFuture,
-      utmSourceFuture,
-      dataSourceFuture,
-      tagFuture,
-      ratingFuture,
-      userFuture,
-    ]);
-
-    print('reportDataProvider - All API calls completed successfully');
-
-    return {
-      'summary': results[0],
-      'utmSource': results[1],
-      'dataSource': results[2],
-      'tag': results[3],
-      'rating': results[4],
-      'user': results[5],
+    // Khởi tạo kết quả mặc định
+    final Map<String, dynamic> result = {
+      'summary': {'content': [], 'metadata': {}},
+      'utmSource': {'content': [], 'metadata': {}},
+      'dataSource': {'content': [], 'metadata': {}},
+      'tag': {'content': [], 'metadata': {}},
+      'rating': {'content': [], 'metadata': {}},
+      'user': {'content': [], 'metadata': {}},
     };
+
+    // Gọi từng API riêng biệt và xử lý lỗi riêng
+    try {
+      result['summary'] = await repository.getSummaryData(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+    } catch (e) {
+      print('Error fetching summary data: $e');
+      // Giữ giá trị mặc định nếu có lỗi
+    }
+
+    try {
+      result['utmSource'] = await repository.getStatisticsByUtmSource(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+    } catch (e) {
+      print('Error fetching utm source data: $e');
+      // Giữ giá trị mặc định nếu có lỗi
+    }
+
+    try {
+      result['dataSource'] = await repository.getStatisticsByDataSource(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+    } catch (e) {
+      print('Error fetching data source data: $e');
+      // Giữ giá trị mặc định nếu có lỗi
+    }
+
+    try {
+      result['tag'] = await repository.getStatisticsByTag(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+    } catch (e) {
+      print('Error fetching tag data: $e');
+      // Giữ giá trị mặc định nếu có lỗi
+    }
+
+    try {
+      result['rating'] = await repository.getChartByRating(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+    } catch (e) {
+      print('Error fetching rating data: $e');
+      // Giữ giá trị mặc định nếu có lỗi
+    }
+
+    try {
+      result['user'] = await repository.getStatisticsByUser(
+        params.organizationId,
+        params.workspaceId,
+        params.startDate,
+        params.endDate,
+      );
+    } catch (e) {
+      print('Error fetching user data: $e');
+      // Giữ giá trị mặc định nếu có lỗi
+    }
+
+    print('reportDataProvider - API calls completed');
+    return result;
   } catch (e, stack) {
-    print('reportDataProvider - Error occurred: $e');
+    print('reportDataProvider - Unexpected error occurred: $e');
     print('reportDataProvider - Stack trace: $stack');
     rethrow;
   }

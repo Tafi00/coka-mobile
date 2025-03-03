@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../providers/report_provider.dart';
+import '../../../../pages/organization/detail_organization/workspace/reports/components/report_providers.dart';
 
 class DetailWorkspacePage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -29,7 +30,7 @@ class _DetailWorkspacePageState extends ConsumerState<DetailWorkspacePage> {
     super.initState();
     // Đảm bảo shouldLoadReports là false khi khởi tạo
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(shouldLoadReportsProvider.notifier).state = false;
+      ref.read(reportsPageShouldLoadProvider.notifier).state = false;
     });
   }
 
@@ -49,7 +50,7 @@ class _DetailWorkspacePageState extends ConsumerState<DetailWorkspacePage> {
       // Delay việc set shouldLoadReports để tránh lỗi build
       Future.microtask(() {
         if (mounted) {
-          ref.read(shouldLoadReportsProvider.notifier).state = true;
+          ref.read(reportsPageShouldLoadProvider.notifier).state = true;
         }
       });
     }
@@ -100,7 +101,7 @@ class _DetailWorkspacePageState extends ConsumerState<DetailWorkspacePage> {
 
               // Reset shouldLoadReports khi rời khỏi tab reports
               if (_currentIndex == 2 && index != 2) {
-                ref.read(shouldLoadReportsProvider.notifier).state = false;
+                ref.read(reportsPageShouldLoadProvider.notifier).state = false;
               }
 
               switch (index) {

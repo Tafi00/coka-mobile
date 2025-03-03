@@ -6,16 +6,13 @@ import 'package:rive/rive.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../../../core/theme/app_colors.dart';
-import '../../../../../../../core/theme/text_styles.dart';
 import '../../../../../../../shared/widgets/avatar_widget.dart';
 import '../../../../../../../shared/widgets/custom_container.dart';
-import '../../../../../../../shared/widgets/loading_dialog.dart';
 import '../../../../../../../shared/widgets/awesome_alert.dart';
 import '../../../../../../../shared/widgets/image_viewer_page.dart';
 import '../../../../../../../providers/customer_provider.dart';
 import '../../../../../../../api/repositories/customer_repository.dart';
 import '../../../../../../../api/api_client.dart';
-import '../widgets/assign_to_bottomsheet.dart';
 import '../widgets/customer_menu.dart';
 
 final customerRepositoryProvider = Provider((ref) {

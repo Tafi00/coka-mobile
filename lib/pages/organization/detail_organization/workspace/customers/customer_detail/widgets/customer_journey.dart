@@ -227,7 +227,7 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                                       Container(
                                         width: 40,
                                         height: 40,
-                                        decoration: BoxDecoration(
+                                        decoration: const BoxDecoration(
                                           color: Colors.white,
                                           shape: BoxShape.circle,
                                         ),

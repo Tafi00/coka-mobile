@@ -26,21 +26,18 @@ class _SwitchRowState extends State<SwitchRow> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          'Hiển thị %',
-          style: TextStyle(fontSize: 12, color: Color(0xFF646A73)),
-        ),
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
         Switch(
+          thumbIcon: const WidgetStatePropertyAll(Icon(Icons.percent)),
+          activeTrackColor: const Color(0xFF483ac1),
           value: _value,
           onChanged: (value) {
             setState(() {
               _value = value;
             });
-            widget.onChanged(value);
+            widget.onChanged(_value);
           },
-          activeColor: const Color(0xFF5C33F0),
         ),
       ],
     );
