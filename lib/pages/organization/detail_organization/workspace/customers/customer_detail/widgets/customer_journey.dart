@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import './stage_select.dart';
 import './journey_item.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CustomerJourney extends ConsumerStatefulWidget {
   const CustomerJourney({super.key});
@@ -191,7 +192,10 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                 final workspaceId = params['workspaceId']!;
                 await ref
                     .read(customerJourneyProvider(customerId).notifier)
-                    .loadJourneyList(organizationId, workspaceId);
+                    .loadJourneyList(
+                      organizationId,
+                      workspaceId,
+                    );
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -208,8 +212,70 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         journeyState.when(
-                          loading: () =>
-                              const Center(child: CircularProgressIndicator()),
+                          loading: () => Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Column(
+                              children: List.generate(
+                                6, // Tăng số lượng items
+                                (index) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              width: double.infinity,
+                                              height: 16,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Container(
+                                              width: 200,
+                                              height: 14,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Container(
+                                              width: 140,
+                                              height: 14,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                           error: (error, stack) => Center(
                             child: Text(
                               'Có lỗi xảy ra: $error',

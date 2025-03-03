@@ -195,7 +195,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
 
             return GestureDetector(
               onTap: () {
-                context.go(
+                context.push(
                   '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers/${widget.customerId}/basic-info',
                   extra: customerDetail,
                 );
@@ -264,53 +264,32 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                               BorderRadius.vertical(top: Radius.circular(12)),
                         ),
                         builder: (context) => AssignToBottomSheet(
-                          onSelected: (selectedUser) {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Chuyển phụ trách?'),
-                                content: const Text(
-                                    'Bạn có chắc muốn phân phối data đến người này?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => context.pop(),
-                                    child: const Text('Hủy'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      try {
-                                        await ref
-                                            .read(customerDetailProvider(
-                                                    widget.customerId)
-                                                .notifier)
-                                            .assignToCustomer(
-                                              widget.organizationId,
-                                              widget.workspaceId,
-                                              selectedUser,
-                                            );
-                                        if (!context.mounted) return;
-                                        context.pop();
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                              content: Text(
-                                                  'Đã chuyển phụ trách thành công')),
-                                        );
-                                      } catch (e) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                              content:
-                                                  Text('Lỗi: ${e.toString()}')),
-                                        );
-                                      }
-                                    },
-                                    child: const Text('Đồng ý'),
-                                  ),
-                                ],
-                              ),
-                            );
+                          organizationId: widget.organizationId,
+                          workspaceId: widget.workspaceId,
+                          onSelected: (selectedUser) async {
+                            try {
+                              await ref
+                                  .read(
+                                      customerDetailProvider(widget.customerId)
+                                          .notifier)
+                                  .assignToCustomer(
+                                    widget.organizationId,
+                                    widget.workspaceId,
+                                    selectedUser,
+                                  );
+
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Đã chuyển phụ trách thành công')),
+                              );
+                            } catch (e) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                              );
+                            }
                           },
                         ),
                       );
@@ -360,9 +339,18 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                                         widget.workspaceId,
                                       );
                                   if (!context.mounted) return;
+
+                                  // Update customer list state
+                                  await ref
+                                      .read(customerListProvider.notifier)
+                                      .loadCustomers(
+                                    widget.organizationId,
+                                    widget.workspaceId,
+                                    {'limit': '20', 'offset': '0'},
+                                  );
+
                                   context.pop();
-                                  context.go(
-                                      '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers');
+                                  context.pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                         content: Text(

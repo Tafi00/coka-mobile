@@ -19,6 +19,12 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: _requestInterceptor,
         onError: _errorInterceptor,
+        onResponse: (response, handler) {
+          print(
+              'API Response - ${response.requestOptions.path}: ${response.statusCode}');
+          print('Response data: ${response.data}');
+          handler.next(response);
+        },
       ),
     );
   }
@@ -27,10 +33,17 @@ class ApiClient {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    print('API Request - ${options.path}');
+    print('Query params: ${options.queryParameters}');
+    print('Headers: ${options.headers}');
+
     // Lấy token từ secure storage
     final token = await storage.read(key: 'access_token');
     if (token != null) {
+      print('Using token: ${token.substring(0, 10)}...');
       options.headers['Authorization'] = 'Bearer $token';
+    } else {
+      print('No token found');
     }
     return handler.next(options);
   }
@@ -39,11 +52,18 @@ class ApiClient {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    print(
+        'API Error - ${err.requestOptions.path}: ${err.response?.statusCode}');
+    print('Error message: ${err.message}');
+    print('Error response: ${err.response?.data}');
+
     if (err.response?.statusCode == 401) {
+      print('Attempting to refresh token...');
       // Token hết hạn, thực hiện refresh token
       try {
         final refreshToken = await storage.read(key: 'refresh_token');
         if (refreshToken != null) {
+          print('Found refresh token, attempting to refresh...');
           final response = await dio.post(
             '/api/v1/account/refreshtoken',
             data: {'refreshToken': refreshToken},
@@ -55,6 +75,7 @@ class ApiClient {
             final newRefreshToken = response.data['content']['refreshToken'];
             await storage.write(key: 'access_token', value: newToken);
             await storage.write(key: 'refresh_token', value: newRefreshToken);
+            print('Token refresh successful');
 
             final opts = err.requestOptions;
             opts.headers['Authorization'] = 'Bearer $newToken';
@@ -73,6 +94,7 @@ class ApiClient {
           }
         }
       } catch (e) {
+        print('Token refresh failed: $e');
         // Xử lý lỗi refresh token
         await storage.deleteAll();
         // TODO: Chuyển về trang login
@@ -84,10 +106,12 @@ class ApiClient {
   Future<Map<String, dynamic>> get(
     String path, {
     Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? headers,
   }) async {
     final response = await dio.get(
       path,
       queryParameters: queryParameters,
+      options: headers != null ? Options(headers: headers) : null,
     );
     return response.data;
   }

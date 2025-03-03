@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../providers/report_provider.dart';
 
-class DetailWorkspacePage extends StatefulWidget {
+class DetailWorkspacePage extends ConsumerStatefulWidget {
   final String organizationId;
   final String workspaceId;
   final Widget child;
@@ -15,17 +17,48 @@ class DetailWorkspacePage extends StatefulWidget {
   });
 
   @override
-  State<DetailWorkspacePage> createState() => _DetailWorkspacePageState();
+  ConsumerState<DetailWorkspacePage> createState() =>
+      _DetailWorkspacePageState();
 }
 
-class _DetailWorkspacePageState extends State<DetailWorkspacePage> {
+class _DetailWorkspacePageState extends ConsumerState<DetailWorkspacePage> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Đảm bảo shouldLoadReports là false khi khởi tạo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(shouldLoadReportsProvider.notifier).state = false;
+    });
+  }
+
+  @override
+  void didUpdateWidget(DetailWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final state = GoRouterState.of(context);
+    final location = state.uri.path;
+
+    // Cập nhật currentIndex dựa trên location
+    if (location.contains('/customers')) {
+      setState(() => _currentIndex = 0);
+    } else if (location.contains('/teams')) {
+      setState(() => _currentIndex = 1);
+    } else if (location.contains('/reports')) {
+      setState(() => _currentIndex = 2);
+      // Delay việc set shouldLoadReports để tránh lỗi build
+      Future.microtask(() {
+        if (mounted) {
+          ref.read(shouldLoadReportsProvider.notifier).state = true;
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = GoRouterState.of(context);
     final location = state.uri.path;
-    print('Current location: $location');
     final hideBottomNav = location.contains('/customers/');
 
     return Scaffold(
@@ -64,6 +97,12 @@ class _DetailWorkspacePageState extends State<DetailWorkspacePage> {
             height: 68,
             onDestinationSelected: (index) {
               setState(() => _currentIndex = index);
+
+              // Reset shouldLoadReports khi rời khỏi tab reports
+              if (_currentIndex == 2 && index != 2) {
+                ref.read(shouldLoadReportsProvider.notifier).state = false;
+              }
+
               switch (index) {
                 case 0:
                   context.replace(
