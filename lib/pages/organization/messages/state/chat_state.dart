@@ -14,6 +14,7 @@ class ChatState {
   final int page;
   final bool hasMore;
   final bool isSending;
+  final Map<String, String> messageErrors;
 
   ChatState({
     this.isLoading = false,
@@ -21,6 +22,7 @@ class ChatState {
     this.page = 0,
     this.hasMore = true,
     this.isSending = false,
+    this.messageErrors = const {},
   });
 
   ChatState copyWith({
@@ -29,6 +31,7 @@ class ChatState {
     int? page,
     bool? hasMore,
     bool? isSending,
+    Map<String, String>? messageErrors,
   }) {
     return ChatState(
       isLoading: isLoading ?? this.isLoading,
@@ -36,6 +39,7 @@ class ChatState {
       page: page ?? this.page,
       hasMore: hasMore ?? this.hasMore,
       isSending: isSending ?? this.isSending,
+      messageErrors: messageErrors ?? this.messageErrors,
     );
   }
 }
@@ -95,6 +99,26 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }) async {
     state = state.copyWith(isSending: true);
 
+    final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+    final tempMessage = Message(
+      id: tempId,
+      conversationId: conversationId,
+      messageId: tempId,
+      from: 'me',
+      fromName: 'Me',
+      to: '',
+      toName: '',
+      message: content,
+      timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      isGpt: false,
+      type: 'MESSAGE',
+      fullName: 'Me',
+      status: 0,
+      attachments: attachments?.map((e) => Attachment.fromJson(e)).toList(),
+    );
+
+    addMessage(tempMessage);
+
     try {
       final body = {
         'conversationId': conversationId,
@@ -104,10 +128,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
       await _repository.sendFacebookMessage(organizationId, body);
 
-      // Refresh messages after sending
       await loadMessages(organizationId, conversationId, refresh: true);
     } catch (e) {
       print('Error sending message: $e');
+
+      final newErrors = Map<String, String>.from(state.messageErrors);
+      newErrors[tempId] = e.toString();
+
+      state = state.copyWith(
+        messageErrors: newErrors,
+      );
     } finally {
       state = state.copyWith(isSending: false);
     }
@@ -116,6 +146,31 @@ class ChatNotifier extends StateNotifier<ChatState> {
   void addMessage(Message message) {
     state = state.copyWith(
       messages: [message, ...state.messages],
+    );
+  }
+
+  void clearMessageError(String messageId) {
+    if (state.messageErrors.containsKey(messageId)) {
+      final newErrors = Map<String, String>.from(state.messageErrors);
+      newErrors.remove(messageId);
+      state = state.copyWith(messageErrors: newErrors);
+    }
+  }
+
+  Future<void> resendMessage(
+    String organizationId,
+    String conversationId,
+    String messageId,
+    String content, {
+    List<Map<String, dynamic>>? attachments,
+  }) async {
+    clearMessageError(messageId);
+
+    await sendMessage(
+      organizationId,
+      conversationId,
+      content,
+      attachments: attachments,
     );
   }
 }
