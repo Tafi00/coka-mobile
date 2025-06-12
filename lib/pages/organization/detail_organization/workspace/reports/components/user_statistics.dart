@@ -4,15 +4,14 @@ import 'package:intl/intl.dart';
 import '../../../../../../shared/widgets/avatar_widget.dart';
 import '../../../../../../shared/widgets/elevated_btn.dart';
 import '../ranking_sale_page.dart';
-import 'report_providers.dart';
 
 class UserStatistics extends ConsumerWidget {
   final Map<String, dynamic> data;
 
   const UserStatistics({
-    Key? key,
+    super.key,
     required this.data,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -171,7 +170,7 @@ class UserStatistics extends ConsumerWidget {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                           if (users.length >= 10)
                             Padding(
                               padding:
@@ -230,11 +229,10 @@ class UserStatistics extends ConsumerWidget {
   }
 
   Widget _buildAvatar(Map<String, dynamic> userData) {
-    return AvatarWidget(
-      imgUrl: userData['avatar'],
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+    return AppAvatar(
+      imageUrl: userData['avatar'],
+      size: 40,
+      shape: AvatarShape.circle,
       fallbackText: userData['fullName'] ?? 'Unknown',
     );
   }

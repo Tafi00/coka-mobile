@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:coka/providers/report_provider.dart';
 import 'components/index.dart';
+import 'package:go_router/go_router.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -64,24 +65,17 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       backgroundColor: const Color(0xFFF2F3F5),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  'Báo cáo',
-                  style: TextStyle(
-                      color: Color(0xFF1F2329),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18),
-                ),
-              ),
-            ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2329)),
+          onPressed: () => context.go('/organization/${widget.organizationId}'),
+        ),
+        centerTitle: true,
+        title: const Text(
+          'Báo cáo',
+          style: TextStyle(
+            color: Color(0xFF1F2329),
+            fontWeight: FontWeight.bold,
+            fontSize: 18
           ),
         ),
         automaticallyImplyLeading: true,

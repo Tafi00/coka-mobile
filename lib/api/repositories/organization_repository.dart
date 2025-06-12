@@ -180,6 +180,17 @@ class OrganizationRepository {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> cancelInvitation(
+    String organizationId,
+    String inviteId,
+  ) async {
+    final response = await _apiClient.dio.post(
+      '/api/v1/organization/member/invite/cancel/$inviteId',
+      options: Options(headers: {'organizationId': organizationId}),
+    );
+    return response.data;
+  }
+
   Future<Map<String, dynamic>> acceptOrRejectInvitation(
     String organizationId,
     String inviteId,
@@ -260,6 +271,31 @@ class OrganizationRepository {
     final response = await _apiClient.dio.delete(
       '/api/v1/organization/member/$profileId',
       options: Options(headers: {'organizationId': organizationId}),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getOrgMembers(
+    String organizationId, {
+    int offset = 0,
+    String? searchText,
+    String? workspaceId,
+  }) async {
+    final queryParams = {
+      'offset': offset,
+      'limit': 1000,
+      if (searchText != null) 'searchText': searchText,
+    };
+    
+    final headers = <String, String>{
+      'organizationId': organizationId,
+      if (workspaceId != null) 'workspaceId': workspaceId,
+    };
+
+    final response = await _apiClient.dio.get(
+      '/api/v1/organization/member/getlistpaging',
+      queryParameters: queryParams,
+      options: Options(headers: headers),
     );
     return response.data;
   }

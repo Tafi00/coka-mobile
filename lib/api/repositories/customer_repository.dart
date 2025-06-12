@@ -60,6 +60,25 @@ class CustomerRepository {
     return response.data;
   }
 
+  Future<dynamic> assignToCustomerV2(
+    String organizationId,
+    String workspaceId,
+    String customerId,
+    dynamic body,
+  ) async {
+    final response = await _apiClient.dio.patch(
+      '/api/v1/crm/contact/$customerId/assigntov2',
+      data: body,
+      options: Options(
+        headers: {
+          'organizationId': organizationId,
+          'workspaceId': workspaceId,
+        },
+      ),
+    );
+    return response.data;
+  }
+
   Future<dynamic> updateCustomer(
     String organizationId,
     String workspaceId,
@@ -178,6 +197,27 @@ class CustomerRepository {
     return response.data;
   }
 
+  Future<dynamic> createNote(
+    String organizationId,
+    String workspaceId,
+    String customerId,
+    String note,
+  ) async {
+    final response = await _apiClient.dio.post(
+      '/api/v1/crm/contact/$customerId/note',
+      data: {
+        'note': note,
+      },
+      options: Options(
+        headers: {
+          'organizationId': organizationId,
+          'workspaceId': workspaceId,
+        },
+      ),
+    );
+    return response.data;
+  }
+
   Future<dynamic> updateRating(
     String organizationId,
     String workspaceId,
@@ -187,6 +227,25 @@ class CustomerRepository {
     final response = await _apiClient.dio.patch(
       '/api/v1/crm/$customerId/rating',
       queryParameters: {'rating': star},
+      options: Options(
+        headers: {
+          'organizationId': organizationId,
+          'workspaceId': workspaceId,
+        },
+      ),
+    );
+    return response.data;
+  }
+
+  Future<dynamic> updateAvatar(
+    String organizationId,
+    String workspaceId,
+    String customerId,
+    FormData formData,
+  ) async {
+    final response = await _apiClient.dio.patch(
+      '/api/v1/crm/$customerId/avatar',
+      data: formData,
       options: Options(
         headers: {
           'organizationId': organizationId,

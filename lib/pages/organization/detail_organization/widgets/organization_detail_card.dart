@@ -143,12 +143,12 @@ class _OrganizationDetailCardState extends State<OrganizationDetailCard> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              AvatarWidget(
-                width: 60,
-                height: 60,
+              AppAvatar(
+                size: 60,
+                shape: AvatarShape.rectangle,
                 borderRadius: 16,
                 fallbackText: _organizationDetail!['name'],
-                imgUrl: _organizationDetail!['avatar'],
+                imageUrl: _organizationDetail!['avatar'],
                 outline: Border.all(
                   color: const Color(0xFFE3DFFF),
                   width: 1,

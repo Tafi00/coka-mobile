@@ -5,7 +5,11 @@ class ApiClient {
   static const String baseUrl =
       'https://api.coka.ai'; // Thay đổi URL API của bạn
   static const storage = FlutterSecureStorage();
-
+  
+  // Cấu hình retry
+  static const int maxRetries = 3; // Số lần thử lại tối đa
+  static const int retryDelayMs = 1000; // Thời gian chờ giữa các lần thử (ms)
+  
   late final Dio dio;
 
   ApiClient() {
@@ -20,11 +24,15 @@ class ApiClient {
         onRequest: _requestInterceptor,
         onError: _errorInterceptor,
         onResponse: (response, handler) {
-          print(
-              'API Response - ${response.requestOptions.path}: ${response.statusCode}');
-          print('Response data: ${response.data}');
           handler.next(response);
         },
+      ),
+    );
+    
+    // Thêm retry interceptor
+    dio.interceptors.add(
+      QueuedInterceptorsWrapper(
+        onError: _retryInterceptor,
       ),
     );
   }
@@ -33,19 +41,72 @@ class ApiClient {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    print('API Request - ${options.path}');
-    print('Query params: ${options.queryParameters}');
-    print('Headers: ${options.headers}');
+    // Thêm metadata cho việc retry
+    options.extra['retryCount'] = 0;
 
     // Lấy token từ secure storage
     final token = await storage.read(key: 'access_token');
     if (token != null) {
-      print('Using token: ${token.substring(0, 10)}...');
       options.headers['Authorization'] = 'Bearer $token';
     } else {
       print('No token found');
     }
     return handler.next(options);
+  }
+
+  // Interceptor xử lý retry khi gặp lỗi
+  Future<void> _retryInterceptor(
+    DioException err, 
+    ErrorInterceptorHandler handler
+  ) async {
+    final options = err.requestOptions;
+    
+    // Lấy số lần đã thử lại
+    final int retryCount = options.extra['retryCount'] ?? 0;
+    
+    // Các lỗi cần retry: timeout, không kết nối được, lỗi server 5xx
+    final bool shouldRetry = _shouldRetry(err) && retryCount < maxRetries;
+    
+    if (shouldRetry) {
+      print('Retrying request (${retryCount + 1}/$maxRetries): ${options.path}');
+      
+      // Tăng biến đếm retry
+      options.extra['retryCount'] = retryCount + 1;
+      
+      // Delay trước khi thử lại, tăng thời gian chờ sau mỗi lần thử (exponential backoff)
+      final delay = retryDelayMs * (retryCount + 1);
+      await Future.delayed(Duration(milliseconds: delay));
+      
+      try {
+        // Thực hiện lại request
+        final response = await dio.fetch(options);
+        return handler.resolve(response);
+      } catch (e) {
+        // Nếu vẫn lỗi, chuyển cho interceptor tiếp theo xử lý
+        if (e is DioException) {
+          return handler.next(e);
+        } else {
+          return handler.next(DioException(
+            requestOptions: options,
+            error: e,
+          ));
+        }
+      }
+    }
+    
+    // Không thử lại, chuyển lỗi cho interceptor tiếp theo
+    return handler.next(err);
+  }
+  
+  // Xác định các loại lỗi nên thử lại
+  bool _shouldRetry(DioException err) {
+    return err.type == DioExceptionType.connectionTimeout ||
+           err.type == DioExceptionType.receiveTimeout ||
+           err.type == DioExceptionType.sendTimeout ||
+           err.type == DioExceptionType.connectionError ||
+           (err.response?.statusCode != null && 
+            err.response!.statusCode! >= 500 && 
+            err.response!.statusCode! < 600);
   }
 
   Future<void> _errorInterceptor(
@@ -54,7 +115,6 @@ class ApiClient {
   ) async {
     print(
         'API Error - ${err.requestOptions.path}: ${err.response?.statusCode}');
-    print('Error message: ${err.message}');
     print('Error response: ${err.response?.data}');
 
     if (err.response?.statusCode == 401) {

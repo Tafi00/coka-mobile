@@ -1,3 +1,5 @@
+import 'package:coka/shared/widgets/avatar_widget.dart';
+// import 'package:coka/shared/widgets/skeleton_box.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -51,17 +53,17 @@ class DashboardCardsSkeleton extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const SkeletonBox(
+                  SkeletonBox(
                     width: 20,
                     height: 20,
                     borderRadius: 20,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   SkeletonBox(
                     width: 40,
                     height: 16,
@@ -69,7 +71,7 @@ class DashboardCardsSkeleton extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               SkeletonBox(
                 width: 80,
                 height: 14,
@@ -100,7 +102,7 @@ class ChartSkeleton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SkeletonBox(height: 24, width: 150),
+            const SkeletonBox(height: 24, width: 150),
             const SizedBox(height: 16),
             SkeletonBox(height: height),
           ],
@@ -122,22 +124,22 @@ class UserStatisticsSkeleton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SkeletonBox(height: 24, width: 200),
+            const SkeletonBox(height: 24, width: 200),
             const SizedBox(height: 16),
             ...List.generate(
               5,
-              (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+              (index) => const Padding(
+                padding: EdgeInsets.only(bottom: 16),
                 child: Row(
                   children: [
-                    const CircleAvatar(radius: 20),
-                    const SizedBox(width: 16),
+                    AppAvatar(size: 40),
+                    SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SkeletonBox(height: 16, width: 150),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           SkeletonBox(height: 12, width: 100),
                         ],
                       ),

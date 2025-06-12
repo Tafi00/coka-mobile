@@ -8,6 +8,8 @@ import 'package:coka/shared/widgets/custom_bottom_navigation.dart';
 import 'package:coka/api/repositories/organization_repository.dart';
 import 'package:coka/shared/widgets/organization_drawer.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:coka/shared/widgets/notification_list_widget.dart';
+import 'dart:async';
 
 class OrganizationPage extends StatefulWidget {
   final String organizationId;
@@ -28,6 +30,7 @@ class _OrganizationPageState extends State<OrganizationPage> {
   Map<String, dynamic>? _organizationInfo;
   List<dynamic> _organizations = [];
   bool _isLoading = true;
+  bool _isLoadingOrganizationsError = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -55,67 +58,95 @@ class _OrganizationPageState extends State<OrganizationPage> {
   }
 
   Future<void> _loadOrganizations() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingOrganizationsError = false;
+      });
+    }
+
     try {
       final organizationRepository = OrganizationRepository(ApiClient());
       final response = await organizationRepository.getOrganizations();
-      if (mounted) {
-        final organizations = response['content'] ?? [];
-        setState(() {
-          _organizations = organizations;
-        });
 
-        if (widget.organizationId == 'default') {
-          // Đọc organization mặc định từ storage
-          final defaultOrgId =
-              await ApiClient.storage.read(key: 'default_organization_id');
-          print('Đọc organization mặc định: $defaultOrgId');
+      if (!mounted) return;
 
-          if (defaultOrgId != null && organizations.isNotEmpty) {
-            // Tìm organization mặc định trong danh sách
-            final defaultOrg = organizations.firstWhere(
-              (org) => org['id'] == defaultOrgId,
-              orElse: () => organizations[0],
-            );
-            print('Tìm thấy organization mặc định: ${defaultOrg['id']}');
-            if (mounted) {
-              context.go('/organization/${defaultOrg['id']}');
-            }
-          } else if (organizations.isNotEmpty) {
-            // Nếu không có organization mặc định, dùng organization đầu tiên
-            print(
-                'Không có organization mặc định, dùng organization đầu tiên: ${organizations[0]['id']}');
-            if (mounted) {
-              context.go('/organization/${organizations[0]['id']}');
-            }
+      final organizations = response['content'] ?? [];
+      setState(() {
+        _organizations = organizations;
+        _isLoadingOrganizationsError = false;
+      });
+
+      if (widget.organizationId == 'default') {
+        final defaultOrgId =
+            await ApiClient.storage.read(key: 'default_organization_id');
+        print('Đọc organization mặc định: $defaultOrgId');
+
+        if (defaultOrgId != null && organizations.isNotEmpty) {
+          final defaultOrg = organizations.firstWhere(
+            (org) => org['id'] == defaultOrgId,
+            orElse: () => organizations[0],
+          );
+          print('Tìm thấy organization mặc định: ${defaultOrg['id']}');
+          if (mounted) {
+            context.go('/organization/${defaultOrg['id']}');
+          }
+        } else if (organizations.isNotEmpty) {
+          print(
+              'Không có organization mặc định, dùng organization đầu tiên: ${organizations[0]['id']}');
+          if (mounted) {
+            context.go('/organization/${organizations[0]['id']}');
           }
         } else {
-          // Cập nhật thông tin organization hiện tại và lưu làm mặc định
-          final currentOrg = organizations.firstWhere(
-            (org) => org['id'] == widget.organizationId,
-            orElse: () => null,
-          );
-          if (currentOrg != null) {
+          print('Không có tổ chức nào được tìm thấy.');
+          if (mounted) {
+            setState(() {
+              _isLoadingOrganizationsError = true;
+            });
+          }
+        }
+      } else {
+        final currentOrg = organizations.firstWhere(
+          (org) => org['id'] == widget.organizationId,
+          orElse: () => null,
+        );
+        if (currentOrg != null) {
+          if (mounted) {
             setState(() {
               _organizationInfo = currentOrg;
             });
-            // Lưu organization mặc định
-            print('Lưu organization mặc định: ${widget.organizationId}');
-            await ApiClient.storage.write(
-              key: 'default_organization_id',
-              value: widget.organizationId,
-            );
-            // Kiểm tra lại giá trị đã lưu
-            final savedOrgId =
-                await ApiClient.storage.read(key: 'default_organization_id');
-            print('Kiểm tra lại organization mặc định đã lưu: $savedOrgId');
+          }
+          print('Lưu organization mặc định: ${widget.organizationId}');
+          await ApiClient.storage.write(
+            key: 'default_organization_id',
+            value: widget.organizationId,
+          );
+          final savedOrgId =
+              await ApiClient.storage.read(key: 'default_organization_id');
+          print('Kiểm tra lại organization mặc định đã lưu: $savedOrgId');
+        } else {
+          print('Organization ID ${widget.organizationId} không tìm thấy trong danh sách.');
+          if (mounted) {
+            if (organizations.isNotEmpty) {
+              context.go('/organization/${organizations[0]['id']}');
+            } else {
+              setState(() {
+                _isLoadingOrganizationsError = true;
+              });
+            }
           }
         }
       }
     } catch (e) {
       print('Lỗi khi load organizations: $e');
       if (mounted) {
+        setState(() {
+          _isLoadingOrganizationsError = true;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể tải danh sách tổ chức')),
+          const SnackBar(
+            content: Text('Không thể tải danh sách tổ chức'),
+            duration: Duration(seconds: 5),
+          ),
         );
       }
     }
@@ -185,12 +216,12 @@ class _OrganizationPageState extends State<OrganizationPage> {
         onTap: () {
           _scaffoldKey.currentState?.openDrawer();
         },
-        child: AvatarWidget(
-          width: 48,
-          height: 48,
+        child: AppAvatar(
+          size: 48,
+          shape: AvatarShape.rectangle,
           borderRadius: 16,
           fallbackText: _userInfo?['fullName'],
-          imgUrl: _userInfo?['avatar'],
+          imageUrl: _userInfo?['avatar'],
         ),
       ),
     );
@@ -209,6 +240,17 @@ class _OrganizationPageState extends State<OrganizationPage> {
       return _buildSkeletonTitle();
     }
 
+    if (_isLoadingOrganizationsError) {
+        return const Text(
+          'Lỗi tải tổ chức',
+          style: TextStyle(color: Colors.red),
+        );
+    }
+
+    if (_organizationInfo == null && widget.organizationId != 'default') {
+       return _buildSkeletonTitle();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -217,10 +259,11 @@ class _OrganizationPageState extends State<OrganizationPage> {
           _userInfo?['fullName'] ?? '',
           style: TextStyles.heading3,
         ),
-        Text(
-          _getRoleText(_organizationInfo?['type']),
-          style: TextStyles.subtitle2,
-        ),
+        if (_organizationInfo != null)
+          Text(
+            _getRoleText(_organizationInfo?['type']),
+            style: TextStyles.subtitle2,
+          ),
       ],
     );
   }
@@ -245,6 +288,12 @@ class _OrganizationPageState extends State<OrganizationPage> {
     return 0;
   }
 
+  // Kiểm tra xem có đang ở trang AI Chatbot không
+  bool _isAIChatbotPage(BuildContext context) {
+    final location = GoRouterState.of(context).uri.path;
+    return location.contains('/campaigns/ai-chatbot');
+  }
+
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
@@ -267,40 +316,64 @@ class _OrganizationPageState extends State<OrganizationPage> {
     }
   }
 
+  void _navigateToNotifications() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.95,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          const notificationWidget = NotificationListWidget(
+            showTitle: false,
+            showMoreOption: false,
+            fullScreen: true,
+          );
+          
+          return notificationWidget;
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem có đang ở trang AI Chatbot không
+    final isAIChatbotPage = _isAIChatbotPage(context);
+    
     return Scaffold(
       key: _scaffoldKey,
       drawer: _buildDrawer(),
-      appBar: AppBar(
+      appBar: isAIChatbotPage ? null : AppBar(
         leading: _buildAvatar(),
         title: _buildTitle(context),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search
-            },
-            style: const ButtonStyle(
-              tapTargetSize:
-                  MaterialTapTargetSize.shrinkWrap, // the '2023' part
-            ),
-          ),
-          IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Implement notifications
-            },
+            onPressed: _navigateToNotifications,
             style: const ButtonStyle(
               tapTargetSize:
-                  MaterialTapTargetSize.shrinkWrap, // the '2023' part
+                  MaterialTapTargetSize.shrinkWrap,
             ),
           ),
           const SizedBox(width: 8),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+                            color: Colors.grey.withValues(alpha: 0.2),
+          ),
+        ),
       ),
       body: widget.child,
-      bottomNavigationBar: CustomBottomNavigation(
+      bottomNavigationBar: isAIChatbotPage ? null : CustomBottomNavigation(
         selectedIndex: _calculateSelectedIndex(context),
         onTapped: (index) => _onItemTapped(index, context),
         showCampaignBadge: false,

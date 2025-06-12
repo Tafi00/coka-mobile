@@ -57,17 +57,12 @@ final reportSummaryProvider =
     FutureProvider.family<Map<String, dynamic>, ReportParams>(
   (ref, params) async {
     final shouldLoad = ref.read(reportsPageShouldLoadProvider);
-    print('reportSummaryProvider - shouldLoad: $shouldLoad');
     if (!shouldLoad) {
-      print(
-          'reportSummaryProvider - Skipping API call because shouldLoad is false');
       return {'content': [], 'metadata': {}};
     }
 
     try {
       print('reportSummaryProvider - Starting API call');
-      print(
-          'reportSummaryProvider - Params: organizationId: ${params.organizationId}, workspaceId: ${params.workspaceId}');
       final repository = ReportRepository(ApiClient());
       final response = await repository.getSummaryData(
         params.organizationId,
@@ -75,7 +70,6 @@ final reportSummaryProvider =
         params.startDate,
         params.endDate,
       );
-      print('reportSummaryProvider - API call successful');
       return response;
     } catch (e, stack) {
       print('reportSummaryProvider - API error: $e');
@@ -234,6 +228,8 @@ class ReportStatisticsByStageGroupNotifier
   final ReportRepository _reportRepository;
   final ReportStageGroupParams _params;
   final Ref _ref;
+  bool _isLoading = false;
+  Map<String, String>? _lastQueryParameters;
 
   ReportStatisticsByStageGroupNotifier(
     this._reportRepository,
@@ -248,17 +244,46 @@ class ReportStatisticsByStageGroupNotifier
   }
 
   Future<void> fetchStatisticsByStageGroup() async {
+    // Kiểm tra nếu đang loading hoặc tham số không thay đổi thì không gọi lại API
+    if (_isLoading) return;
+    
+    // So sánh tham số với lần gọi trước
+    if (_lastQueryParameters != null && 
+        _params.queryParameters != null &&
+        _mapEquals(_lastQueryParameters!, _params.queryParameters!)) {
+      return;
+    }
+    
     try {
-      state = const AsyncValue.loading();
+      _isLoading = true;
+      if (state is! AsyncLoading) {
+        state = const AsyncValue.loading();
+      }
+      
       final response = await _reportRepository.getStatisticsByStageGroup(
         _params.organizationId,
         _params.workspaceId,
         queryParameters: _params.queryParameters,
       );
+      
+      // Lưu lại tham số cuối cùng
+      if (_params.queryParameters != null) {
+        _lastQueryParameters = Map<String, String>.from(_params.queryParameters!);
+      } else {
+        _lastQueryParameters = null;
+      }
+      
       state = AsyncValue.data(response);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+    } finally {
+      _isLoading = false;
     }
+  }
+  
+  bool _mapEquals(Map<String, String> map1, Map<String, String> map2) {
+    if (map1.length != map2.length) return false;
+    return map1.entries.every((e) => map2[e.key] == e.value);
   }
 }
 
@@ -280,10 +305,6 @@ final reportDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
   try {
     print('reportDataProvider - Starting API calls with params:');
-    print('organizationId: ${params.organizationId}');
-    print('workspaceId: ${params.workspaceId}');
-    print('startDate: ${params.startDate}');
-    print('endDate: ${params.endDate}');
 
     final repository = ReportRepository(ApiClient());
 
@@ -373,7 +394,6 @@ final reportDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
     print('reportDataProvider - API calls completed');
     return result;
   } catch (e, stack) {
-    print('reportDataProvider - Unexpected error occurred: $e');
     print('reportDataProvider - Stack trace: $stack');
     rethrow;
   }

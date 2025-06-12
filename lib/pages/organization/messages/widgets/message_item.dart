@@ -35,12 +35,11 @@ class MessageItem extends ConsumerWidget {
   }
 
   Widget _buildAvatar(
-      String name, String? imageUrl, double width, double height) {
-    return AvatarWidget(
-      // imgUrl: imageUrl,
-      width: width,
-      height: height,
-      borderRadius: 100,
+      String name, String? imageUrl, double size) {
+    return AppAvatar(
+      imageUrl: imageUrl,
+      size: size,
+      shape: AvatarShape.circle,
       fallbackText: name,
     );
   }
@@ -81,7 +80,7 @@ class MessageItem extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAvatar(sender, avatar, 40, 40),
+              _buildAvatar(sender, avatar, 40),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -134,7 +133,7 @@ class MessageItem extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             content,
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 12,
@@ -145,7 +144,7 @@ class MessageItem extends ConsumerWidget {
                         if (pageAvatar != null)
                           Padding(
                             padding: const EdgeInsets.only(left: 8),
-                            child: _buildAvatar('Page', pageAvatar, 15, 15),
+                            child: _buildAvatar('Page', pageAvatar, 15),
                           ),
                       ],
                     ),

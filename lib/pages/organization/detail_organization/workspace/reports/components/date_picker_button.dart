@@ -11,12 +11,12 @@ class DatePickerButton extends ConsumerWidget {
   final bool hideBg;
 
   const DatePickerButton({
-    Key? key,
+    super.key,
     required this.organizationId,
     required this.workspaceId,
     this.isExpanded = false,
     this.hideBg = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -14,6 +13,7 @@ import '../../../../../shared/widgets/chip_input.dart';
 import '../../../../../shared/widgets/radio_gender.dart';
 import '../../../../../shared/widgets/border_textfield.dart';
 import '../../../../../shared/widgets/awesome_textfield.dart';
+import '../../../../../shared/widgets/avatar_widget.dart';
 
 const customerSourceList = [
   "Khách cũ",
@@ -339,36 +339,39 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
                   onTap: _openImagePicker,
                   child: Stack(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: const Color(0xFFF8F8F8),
-                        radius: 45,
+                      SizedBox(
+                        width: 90,
+                        height: 90,
                         child: _pickedImage != null
                             ? ClipOval(
                                 child: Image.file(
                                   File(_pickedImage!.path),
-                                  width: 300,
-                                  height: 300,
+                                  width: 90,
+                                  height: 90,
                                   fit: BoxFit.cover,
                                 ),
                               )
-                            : widget.customerData['avatar'] != null
-                                ? Image.network(
-                                    widget.customerData['avatar'],
-                                    width: 300,
-                                    height: 300,
-                                    fit: BoxFit.cover,
-                                  )
-                                : SvgPicture.asset(
-                                    "assets/icons/profile_avatar.svg"),
+                            : AppAvatar(
+                                fallbackText: widget.customerData['name'] ?? _nameController.text,
+                                imageUrl: widget.customerData['avatar'],
+                                size: 90,
+                              ),
                       ),
-                      if (_pickedImage == null &&
-                          widget.customerData['avatar'] == null)
-                        const Positioned(
+                      if (_pickedImage == null && widget.customerData['avatar'] == null)
+                        Positioned(
                           bottom: 0,
                           right: 0,
-                          child: Icon(
-                            Icons.camera_alt_outlined,
-                            color: Colors.black,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 20,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                     ],
@@ -416,7 +419,7 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
                       Container(
                         height: 20,
                         width: 1,
-                        color: const Color(0x00000000).withOpacity(0.12),
+                        color: const Color(0x00000000).withValues(alpha: 0.12),
                       ),
                     ],
                   ),
@@ -486,7 +489,7 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
                       Container(
                         height: 20,
                         width: 1,
-                        color: const Color(0x00000000).withOpacity(0.12),
+                        color: const Color(0x00000000).withValues(alpha: 0.12),
                       ),
                     ],
                   ),
@@ -788,7 +791,7 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
                       Container(
                         height: 20,
                         width: 1,
-                        color: const Color(0x00000000).withOpacity(0.12),
+                        color: const Color(0x00000000).withValues(alpha: 0.12),
                       ),
                     ],
                   ),
@@ -826,7 +829,7 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
                       Container(
                         height: 20,
                         width: 1,
-                        color: const Color(0x00000000).withOpacity(0.12),
+                        color: const Color(0x00000000).withValues(alpha: 0.12),
                       ),
                     ],
                   ),

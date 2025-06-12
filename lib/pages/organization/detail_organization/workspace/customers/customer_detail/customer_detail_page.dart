@@ -1,13 +1,14 @@
-import 'package:coka/core/theme/app_colors.dart';
-import 'package:coka/core/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../../../providers/customer_provider.dart';
-import '../../../../../../shared/widgets/avatar_widget.dart';
+import 'package:coka/providers/customer_provider.dart';
+// import 'providers/customer_detail_provider.dart'; // Tạm thời comment lại
+// import 'providers/customer_activity_provider.dart'; // Tạm thời comment lại
+import 'package:coka/shared/widgets/avatar_widget.dart'; // Đảm bảo có import
+import 'package:shimmer/shimmer.dart'; // Thêm import shimmer
 import 'widgets/customer_journey.dart';
 import 'widgets/assign_to_bottomsheet.dart';
+// import '../../../../../../shared/widgets/avatar_widget.dart'; // Remove duplicate import
 
 class CustomerDetailPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -29,15 +30,28 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
   @override
   void initState() {
     super.initState();
-    Future(() {
-      if (!mounted) return;
+    Future.microtask(() {
       ref
           .read(customerDetailProvider(widget.customerId).notifier)
-          .loadCustomerDetail(widget.organizationId, widget.workspaceId);
+          .loadCustomerDetail(widget.organizationId, widget.workspaceId)
+          .then((customerDetail) {
+        if (customerDetail == null && mounted) {
+          // Lỗi sẽ được hiển thị trong phần error của widget, không cần xử lý thêm ở đây
+        }
+      }).catchError((e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: ${e.toString()}'),
+            ),
+          );
+          context.go('/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers');
+        }
+      });
     });
   }
 
-  Widget _buildShimmerLoading() {
+  Widget _buildLoadingSkeleton() {
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
@@ -124,10 +138,163 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
     );
   }
 
+  Widget _buildCompactAssigneeInfo(Map<String, dynamic> customerDetail) {
+    final assignToUser = customerDetail['assignToUser'];
+    final assignToUsers = customerDetail['assignToUsers'] as List<dynamic>?;
+    final teamResponse = customerDetail['teamResponse'];
+    
+    void showAssignBottomSheet() {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => AssignToBottomSheet(
+          organizationId: widget.organizationId,
+          workspaceId: widget.workspaceId,
+          customerId: widget.customerId,
+          defaultAssignees: customerDetail['assignToUsers'] != null 
+              ? List<Map<String, dynamic>>.from(customerDetail['assignToUsers']) 
+              : [],
+          onSelected: (assignData) {
+            // Callback này không còn được sử dụng vì đã xử lý trực tiếp trong bottomsheet
+          },
+        ),
+      );
+    }
+    
+    // Trường hợp có nhiều người phụ trách
+    final hasAssignToUsers = assignToUsers != null && assignToUsers.isNotEmpty;
+    
+    if (hasAssignToUsers) {
+      final displayUsers = assignToUsers.take(3).toList(); // Chỉ hiển thị 3 trong AppBar
+      final stackWidth = 16.0 + (displayUsers.length > 1 ? (displayUsers.length - 1) * 10.0 : 0);
+      
+      return GestureDetector(
+        onTap: showAssignBottomSheet,
+        child: Row(
+          children: [
+            Text(
+              'Phụ trách: ',
+              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            ),
+            SizedBox(
+              width: stackWidth,
+              height: 16,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: displayUsers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final user = entry.value;
+                  return Positioned(
+                    left: index * 10.0,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 1,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: AppAvatar(
+                          size: 14,
+                          shape: AvatarShape.circle,
+                          imageUrl: user['avatar'],
+                          fallbackText: user['fullName'],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(width: 4),
+            if (assignToUsers.length > 3)
+              Text(
+                '+${assignToUsers.length - 3}',
+                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              ),
+          ],
+        ),
+      );
+    }
+    
+    // Trường hợp có một người phụ trách duy nhất hoặc team
+    String assigneeName = '';
+    String? avatarUrl;
+    bool isTeam = false;
+    
+    if (assignToUser != null) {
+      assigneeName = assignToUser['fullName'] ?? '';
+      avatarUrl = assignToUser['avatar'];
+    } else if (teamResponse != null && teamResponse['name'] != null) {
+      assigneeName = teamResponse['name'];
+      isTeam = true;
+    }
+    
+    if (assigneeName.isEmpty) {
+      return GestureDetector(
+        onTap: showAssignBottomSheet,
+        child: Text(
+          'Phụ trách: Chưa phân công',
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey[600],
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+    
+    return GestureDetector(
+      onTap: showAssignBottomSheet,
+      child: Row(
+        children: [
+          Text(
+            'Phụ trách: ',
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+          ),
+          if (isTeam)
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF5C33F0).withValues(alpha: 0.1),
+              ),
+              child: const Icon(
+                Icons.group,
+                size: 8,
+                color: Color(0xFF5C33F0),
+              ),
+            )
+          else
+            AppAvatar(
+              size: 12,
+              shape: AvatarShape.circle,
+              imageUrl: avatarUrl,
+              fallbackText: assigneeName,
+            ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              assigneeName,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[600],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final customerDetailAsync =
-        ref.watch(customerDetailProvider(widget.customerId));
+    final customerDetailAsync = ref.watch(customerDetailProvider(widget.customerId));
 
     return Scaffold(
       appBar: AppBar(
@@ -138,61 +305,38 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
           onPressed: () => context.pop(),
         ),
         title: customerDetailAsync.when(
-          loading: () => Row(
-            children: [
-              Shimmer.fromColors(
+           loading: () => Shimmer.fromColors(
                 baseColor: Colors.grey[300]!,
                 highlightColor: Colors.grey[100]!,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
+               child: Row(
+                 children: [
+                   Container(width: 40, height: 40, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
               const SizedBox(width: 12),
-              Expanded(
-                child: Shimmer.fromColors(
-                  baseColor: Colors.grey[300]!,
-                  highlightColor: Colors.grey[100]!,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 80,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
+                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [Container(width: 120, height: 16, color: Colors.white), const SizedBox(height: 4), Container(width: 80, height: 14, color: Colors.white)])),
+                 ]
                   ),
-                ),
-              ),
-            ],
           ),
-          error: (error, stack) => Text(
-            'Lỗi: ${error.toString()}',
-            style: const TextStyle(color: Colors.black),
-          ),
+           error: (error, stack) {
+             // Khi có lỗi, quay lại trang danh sách khách hàng
+             WidgetsBinding.instance.addPostFrameCallback((_) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                 SnackBar(content: Text(error.toString())),
+               );
+               context.go('/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers');
+             });
+             return const Text('Đang chuyển hướng...');
+           },
           data: (customerDetail) {
-            if (customerDetail == null) {
-              return const SizedBox();
-            }
-
+             if (customerDetail == null) {
+               // Khi khách hàng không tồn tại, quay lại trang danh sách khách hàng
+               WidgetsBinding.instance.addPostFrameCallback((_) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                   const SnackBar(content: Text('Khách hàng không tồn tại hoặc đã bị xóa')),
+                 );
+                 context.go('/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers');
+               });
+               return const Text('Đang chuyển hướng...');
+             }
             return GestureDetector(
               onTap: () {
                 context.push(
@@ -202,12 +346,10 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
               },
               child: Row(
                 children: [
-                  AvatarWidget(
+                   AppAvatar(
+                      imageUrl: customerDetail['avatar'],
                     fallbackText: customerDetail['fullName'] ?? '',
-                    imgUrl: customerDetail['avatar'],
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
+                      size: 40,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -215,26 +357,9 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          customerDetail['fullName'] ?? '',
-                          style: const TextStyle(
-                            color: AppColors.text,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (customerDetail['gender'] != null)
-                          Text(
-                            customerDetail['gender'] == 1
-                                ? 'Nam'
-                                : customerDetail['gender'] == 0
-                                    ? 'Nữ'
-                                    : 'Khác',
-                            style: TextStyles.subtitle3,
-                            maxLines: 1,
-                          ),
+                         Text(customerDetail['fullName'] ?? '', style: const TextStyle(color: Color(0xFF1F2329), fontSize: 16, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                       const SizedBox(height: 2),
+                        _buildCompactAssigneeInfo(customerDetail),
                       ],
                     ),
                   ),
@@ -249,161 +374,159 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
             error: (_, __) => const SizedBox(),
             data: (customerDetail) {
               if (customerDetail == null) return const SizedBox();
-
               return MenuAnchor(
-                alignmentOffset: const Offset(-160, 0),
+                 style: MenuStyle(
+                   backgroundColor: const WidgetStatePropertyAll(Colors.white),
+                   elevation: const WidgetStatePropertyAll(4),
+                   shadowColor: WidgetStatePropertyAll(Colors.black.withValues(alpha: 0.08)),
+                   shape: WidgetStatePropertyAll(
+                     RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(12),
+                       side: const BorderSide(
+                         color: Color(0xFFE4E7EC),
+                         width: 1,
+                       ),
+                     ),
+                   ),
+                   padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 8)),
+                 ),
+                 builder: (context, controller, child) {
+                    return IconButton(
+                      icon: const Icon(Icons.more_vert),
+                      onPressed: () {
+                        if (controller.isOpen) {
+                          controller.close();
+                        } else {
+                          controller.open();
+                        }
+                      },
+                    );
+                 },
                 menuChildren: [
                   MenuItemButton(
-                    leadingIcon: const Icon(Icons.person_add_outlined),
+                    style: const ButtonStyle(
+                      padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                      minimumSize: WidgetStatePropertyAll(Size.zero),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    leadingIcon: const Icon(
+                      Icons.swap_horiz,
+                      size: 20,
+                      color: Color(0xFF667085),
+                    ),
                     onPressed: () {
                       showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(12)),
-                        ),
                         builder: (context) => AssignToBottomSheet(
                           organizationId: widget.organizationId,
                           workspaceId: widget.workspaceId,
-                          onSelected: (selectedUser) async {
-                            try {
-                              await ref
-                                  .read(
-                                      customerDetailProvider(widget.customerId)
-                                          .notifier)
-                                  .assignToCustomer(
-                                    widget.organizationId,
-                                    widget.workspaceId,
-                                    selectedUser,
-                                  );
-
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Đã chuyển phụ trách thành công')),
-                              );
-                            } catch (e) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Lỗi: ${e.toString()}')),
-                              );
-                            }
-                          },
+                          customerId: widget.customerId,
+                          defaultAssignees: customerDetail['assignToUsers'] != null 
+                              ? List<Map<String, dynamic>>.from(customerDetail['assignToUsers']) 
+                              : [],
+                                    onSelected: (assignData) {
+                                      // Callback này không còn được sử dụng vì đã xử lý trực tiếp trong bottomsheet
+                                    },
                         ),
                       );
                     },
-                    child: const Text(
-                      'Chuyển phụ trách',
-                      style: TextStyle(color: Colors.black),
-                    ),
+                     child: const Text(
+                       'Chuyển phụ trách',
+                       style: TextStyle(
+                         fontSize: 14,
+                         fontWeight: FontWeight.w400,
+                         color: Color(0xFF101828),
+                       ),
+                     ),
                   ),
                   MenuItemButton(
-                    leadingIcon: const Icon(Icons.edit_outlined),
+                    style: const ButtonStyle(
+                      padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                      minimumSize: WidgetStatePropertyAll(Size.zero),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    leadingIcon: const Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: Color(0xFF667085),
+                    ),
                     onPressed: () {
                       context.push(
                         '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers/${widget.customerId}/edit',
                         extra: customerDetail,
                       );
                     },
-                    child: const Text(
-                      'Chỉnh sửa thông tin',
-                      style: TextStyle(color: Colors.black),
-                    ),
+                      child: const Text(
+                        'Chỉnh sửa khách hàng',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF101828),
+                        ),
+                      ),
                   ),
                   MenuItemButton(
-                    leadingIcon:
-                        const Icon(Icons.delete_outline, color: Colors.red),
+                     style: const ButtonStyle(
+                       padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                       minimumSize: WidgetStatePropertyAll(Size.zero),
+                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                     ),
+                     leadingIcon: const Icon(
+                       Icons.delete_outline,
+                       size: 20,
+                       color: Colors.red,
+                     ),
                     onPressed: () {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text('Xóa khách hàng?'),
-                          content: const Text(
-                              'Bạn có chắc muốn xóa khách hàng này? Hành động này không thể hoàn tác.'),
+                            content: const Text('Hành động này không thể hoàn tác.'),
                           actions: [
-                            TextButton(
-                              onPressed: () => context.pop(),
-                              child: const Text('Hủy'),
-                            ),
+                              TextButton(onPressed: () => context.pop(), child: const Text('Hủy')),
                             TextButton(
                               onPressed: () async {
                                 try {
-                                  await ref
-                                      .read(customerDetailProvider(
-                                              widget.customerId)
-                                          .notifier)
-                                      .deleteCustomer(
-                                        widget.organizationId,
-                                        widget.workspaceId,
-                                      );
+                                    await ref.read(customerDetailProvider(widget.customerId).notifier).deleteCustomer(widget.organizationId, widget.workspaceId);
+                                    ref.read(customerListProvider.notifier).removeCustomer(widget.customerId);
                                   if (!context.mounted) return;
-
-                                  // Update customer list state
-                                  await ref
-                                      .read(customerListProvider.notifier)
-                                      .loadCustomers(
-                                    widget.organizationId,
-                                    widget.workspaceId,
-                                    {'limit': '20', 'offset': '0'},
-                                  );
-
                                   context.pop();
                                   context.pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Đã xóa khách hàng thành công')),
-                                  );
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa khách hàng')));
                                 } catch (e) {
                                   if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text('Lỗi: ${e.toString()}')),
-                                  );
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
                                 }
                               },
-                              child: const Text('Xóa',
-                                  style: TextStyle(color: Colors.red)),
+                                child: const Text('Xóa', style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
                       );
                     },
-                    child: const Text(
-                      'Xóa khách hàng',
-                      style: TextStyle(color: Colors.red),
-                    ),
+                     child: const Text(
+                       'Xóa khách hàng',
+                       style: TextStyle(
+                         fontSize: 14,
+                         fontWeight: FontWeight.w400,
+                         color: Colors.red,
+                       ),
+                     ),
                   ),
                 ],
-                builder: (context, controller, child) {
-                  return IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {
-                      if (controller.isOpen) {
-                        controller.close();
-                      } else {
-                        controller.open();
-                      }
-                    },
-                  );
-                },
               );
             },
           ),
         ],
       ),
       body: customerDetailAsync.when(
-        loading: _buildShimmerLoading,
-        error: (error, stack) => Center(
-          child: Text('Lỗi: ${error.toString()}'),
-        ),
+        loading: () => _buildLoadingSkeleton(), 
+        error: (error, stack) => Center(child: Text('Đang chuyển hướng: ${error.toString()}')),
         data: (customerDetail) {
           if (customerDetail == null) {
-            return const Center(child: Text('Không có dữ liệu'));
+            return const Center(child: Text('Đang chuyển hướng...')); 
           }
-
           return const CustomerJourney();
         },
       ),

@@ -7,11 +7,11 @@ class DashboardCards extends StatelessWidget {
   final String workspaceId;
 
   const DashboardCards({
-    Key? key,
+    super.key,
     required this.data,
     required this.organizationId,
     required this.workspaceId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

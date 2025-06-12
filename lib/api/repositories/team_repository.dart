@@ -232,4 +232,28 @@ class TeamRepository {
     );
     return response.data;
   }
+
+  Future<Map<String, dynamic>> getUserCurrentManagerList(
+    String organizationId,
+    String workspaceId, {
+    String? searchText,
+    bool? withManager=false,
+  }) async {
+    final queryParams = {
+      'Fields': 'FULLNAME',
+      'limit': 1000,
+      if (searchText != null) 'searchText': searchText,
+      if (withManager != null) 'withManager': withManager,
+    };
+
+    final response = await _apiClient.dio.get(
+      '$_baseUrl/team/user/current-managers',
+      queryParameters: queryParams,
+      options: Options(headers: {
+        'organizationId': organizationId,
+        'workspaceId': workspaceId,
+      }),
+    );
+    return response.data;
+  }
 }

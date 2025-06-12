@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../providers/team_provider.dart';
 import '../../../../../shared/widgets/avatar_widget.dart';
 import '../../../../../shared/widgets/search_bar.dart';
 import '../../../../../models/find_child.dart';
+import 'package:coka/providers/team_provider.dart';
 
 class TeamsPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -33,20 +33,14 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
   @override
   void initState() {
     super.initState();
-    // Fetch team list when page loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Sử dụng provider đúng
+    Future.microtask(() {
       ref.read(teamListProvider.notifier).fetchTeamList(
-            widget.organizationId,
-            widget.workspaceId,
-            isTreeView: true,
-          );
-      if (widget.parentId != null) {
-        ref.read(memberListProvider.notifier).fetchMemberList(
-              widget.organizationId,
-              widget.workspaceId,
-              widget.parentId!,
-            );
-      }
+          widget.organizationId, widget.workspaceId,
+          isTreeView: true);
+      ref.read(memberListProvider.notifier).fetchMemberList(
+          widget.organizationId, widget.workspaceId, "", // Cần teamId ở đây?
+          searchText: searchText.text);
     });
   }
 
@@ -84,6 +78,18 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
   }
 
   void showTreeViewBottomSheet(BuildContext context) {
+    // Kiểm tra danh sách team trước khi mở bottomsheet
+    if (teamList.isEmpty) {
+      // Không mở bottomsheet nếu không có nhánh con
+      return;
+    }
+    
+    // Lấy dữ liệu team hiện tại từ danh sách team
+    final teamAsync = ref.read(teamListProvider);
+    final currentTeam = teamAsync.value != null && widget.parentId != null
+        ? findBranchWithParentId(teamAsync.value!, widget.parentId)
+        : null;
+        
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -104,7 +110,7 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                   children: [
                     const SizedBox(height: 14),
                     Text(
-                      widget.parentId == null ? "Đội sale" : teamChild["name"],
+                      widget.parentId == null ? "Đội sale" : (currentTeam != null ? currentTeam["name"] : ""),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -153,6 +159,7 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Sử dụng provider đúng
     final teamListAsync = ref.watch(teamListProvider);
     final memberListAsync = ref.watch(memberListProvider);
 
@@ -169,6 +176,10 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
         title: InkWell(
           onTap: () {
             if (teamListAsync.value != null) {
+              // Kiểm tra trước nếu không có dữ liệu thì không mở
+              if (teamListAsync.value!.isEmpty) {
+                return;
+              }
               showTreeViewBottomSheet(context);
             }
           },
@@ -252,12 +263,10 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                     itemBuilder: (context, index) {
                       final team = displayList[index];
                       return ListTile(
-                        leading: AvatarWidget(
-                          width: 44,
-                          height: 44,
-                          imgUrl: team['avatar'],
+                        leading: AppAvatar(
+                          imageUrl: team['avatar'],
                           fallbackText: team['name'],
-                          borderRadius: 100,
+                          size: 40,
                         ),
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -345,12 +354,10 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                                 itemBuilder: (context, index) {
                                   final team = teamList[index];
                                   return ListTile(
-                                    leading: AvatarWidget(
-                                      width: 44,
-                                      height: 44,
-                                      imgUrl: team['avatar'],
+                                    leading: AppAvatar(
+                                      imageUrl: team['avatar'],
                                       fallbackText: team['name'],
-                                      borderRadius: 100,
+                                      size: 40,
                                     ),
                                     title: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -426,12 +433,10 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                                 itemBuilder: (context, index) {
                                   final leader = leadList[index];
                                   return ListTile(
-                                    leading: AvatarWidget(
-                                      width: 44,
-                                      height: 44,
-                                      imgUrl: leader['avatar'],
+                                    leading: AppAvatar(
+                                      imageUrl: leader['avatar'],
                                       fallbackText: leader['fullName'],
-                                      borderRadius: 100,
+                                      size: 40,
                                     ),
                                     title: Text(
                                       leader['fullName'],
@@ -460,12 +465,10 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                                   final member = members[index];
                                   final profile = member['profile'];
                                   return ListTile(
-                                    leading: AvatarWidget(
-                                      width: 44,
-                                      height: 44,
-                                      imgUrl: profile['avatar'],
+                                    leading: AppAvatar(
+                                      imageUrl: profile['avatar'],
                                       fallbackText: profile['fullName'],
-                                      borderRadius: 100,
+                                      size: 40,
                                     ),
                                     title: Text(
                                       profile['fullName'],
@@ -525,12 +528,10 @@ class _CExpansionTileState extends State<CExpansionTile> {
     return Column(
       children: [
         ListTile(
-          leading: AvatarWidget(
-            width: 44,
-            height: 44,
-            imgUrl: widget.avatar,
+          leading: AppAvatar(
+            imageUrl: widget.avatar,
             fallbackText: widget.name,
-            borderRadius: 100,
+            size: 40,
           ),
           title: Text(
             widget.name,

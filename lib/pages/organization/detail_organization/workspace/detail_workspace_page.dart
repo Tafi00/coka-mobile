@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../providers/report_provider.dart';
 import '../../../../pages/organization/detail_organization/workspace/reports/components/report_providers.dart';
 
 class DetailWorkspacePage extends ConsumerStatefulWidget {

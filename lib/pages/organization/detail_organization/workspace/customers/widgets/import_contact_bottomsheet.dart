@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:coka/shared/widgets/avatar_widget.dart';
+import '../../../../../../shared/widgets/avatar_widget.dart';
 import 'package:coka/api/repositories/customer_repository.dart';
 import 'package:coka/api/api_client.dart';
 import 'package:dio/dio.dart';
@@ -213,11 +213,10 @@ class _ImportContactBottomSheetState
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15),
           child: Row(
             children: [
-              AvatarWidget(
+              AppAvatar(
                 fallbackText: contact.displayName,
-                width: 40,
-                height: 40,
-                borderRadius: 50,
+                size: 40,
+                shape: AvatarShape.circle,
               ),
               const SizedBox(width: 12),
               Expanded(

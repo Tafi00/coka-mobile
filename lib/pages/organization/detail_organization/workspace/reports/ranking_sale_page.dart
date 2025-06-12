@@ -1,9 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../shared/widgets/avatar_widget.dart';
-import 'components/search_anchor.dart';
+import 'package:coka/shared/widgets/avatar_widget.dart';
 
 class RankingSalePage extends ConsumerStatefulWidget {
   final List userList;
@@ -32,7 +30,7 @@ class _RankingSalePageState extends ConsumerState<RankingSalePage> {
     hintPrefsData = {};
 
     // Lấy workGroupId từ provider hoặc từ nguồn khác
-    final workGroupId = "default"; // Thay thế bằng ID thực tế
+    const workGroupId = "default"; // Thay thế bằng ID thực tế
 
     setState(() {
       hintUserList = hintPrefsData[workGroupId] ?? [];
@@ -72,7 +70,7 @@ class _RankingSalePageState extends ConsumerState<RankingSalePage> {
           hintUserList.insert(0, searchController.text);
 
           // Lấy workGroupId từ provider hoặc từ nguồn khác
-          final workGroupId = "default"; // Thay thế bằng ID thực tế
+          const workGroupId = "default"; // Thay thế bằng ID thực tế
 
           hintPrefsData[workGroupId] = hintUserList;
         }
@@ -226,11 +224,9 @@ class _RankingSalePageState extends ConsumerState<RankingSalePage> {
                             const SizedBox(
                               width: 8,
                             ),
-                            AvatarWidget(
-                              imgUrl: currentUser?["avatar"],
-                              width: 40,
-                              height: 40,
-                              borderRadius: 20,
+                            AppAvatar(
+                              imageUrl: currentUser?["avatar"],
+                              size: 40,
                               fallbackText: currentUser?["fullName"] ?? "",
                             ),
                             const SizedBox(
@@ -332,11 +328,9 @@ class _RankingSalePageState extends ConsumerState<RankingSalePage> {
                     const SizedBox(
                       width: 8,
                     ),
-                    AvatarWidget(
-                      imgUrl: userData?["avatar"],
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
+                    AppAvatar(
+                      imageUrl: userData?["avatar"],
+                      size: 40,
                       fallbackText: userData?["fullName"] ?? "",
                     ),
                     const SizedBox(
@@ -438,14 +432,14 @@ class CustomSearchAnchor extends StatelessWidget {
       suggestionsBuilder;
 
   const CustomSearchAnchor({
-    Key? key,
+    super.key,
     required this.builder,
     required this.searchController,
     required this.onTextChanged,
     required this.isFullScreen,
     required this.viewConstraints,
     required this.suggestionsBuilder,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -477,10 +471,10 @@ class Badge extends StatelessWidget {
   final bool isLabelVisible;
 
   const Badge({
-    Key? key,
+    super.key,
     required this.child,
     this.isLabelVisible = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

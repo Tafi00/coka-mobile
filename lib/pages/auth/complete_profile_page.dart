@@ -4,11 +4,11 @@ import 'package:coka/core/theme/app_colors.dart';
 import 'package:coka/shared/widgets/loading_button.dart';
 import 'package:coka/api/repositories/auth_repository.dart';
 import 'package:coka/api/api_client.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io' show File;
 import 'package:coka/core/utils/helpers.dart';
 import 'package:dio/dio.dart';
+import 'package:coka/shared/widgets/custom_alert_dialog.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   const CompleteProfilePage({super.key});
@@ -41,11 +41,39 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       if (response['code'] == 0) {
         final metadata = response['content'];
         setState(() {
+          _nameController.text = metadata['fullName'] ?? '';
           _emailController.text = metadata['email'] ?? '';
+          _phoneController.text = metadata['phone'] ?? '';
+          if (metadata['dob'] != null) {
+            final DateTime dob = DateTime.parse(metadata['dob']);
+            _birthdayController.text = "${dob.day}/${dob.month}/${dob.year}";
+          }
+          _workplaceController.text = metadata['address'] ?? '';
+          
+          // Cập nhật giới tính
+          if (metadata['gender'] != null) {
+            switch (metadata['gender']) {
+              case 0:
+                _selectedGender = 'Nữ';
+                break;
+              case 1:
+                _selectedGender = 'Nam';
+                break;
+              default:
+                _selectedGender = 'Khác';
+                break;
+            }
+          }
         });
       }
     } catch (e) {
       // Xử lý lỗi nếu cần
+      print('Lỗi khi tải thông tin người dùng: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể tải thông tin người dùng')),
+        );
+      }
     }
   }
 
@@ -55,7 +83,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      await _authRepository.updateProfile({
+      final response = await _authRepository.updateProfile({
         'fullName': _nameController.text,
         'email': _emailController.text,
         'phone': _phoneController.text,
@@ -71,7 +99,21 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       }, avatar: _selectedAvatar);
 
       if (!mounted) return;
-      context.go('/organization/default');
+      
+      if (response['code'] == 0) {
+        showCustomAlert(
+          context: context,
+          title: 'Thành công',
+          message: 'Thông tin của bạn đã được cập nhật thành công.',
+          confirmText: 'Đóng',
+          icon: Icons.check_circle_outline,
+          onConfirm: () {
+            Navigator.of(context).pop(); // Quay lại trang trước đó
+          },
+        );
+      } else {
+        Helpers.showErrorSnackBar(context, response['message'] ?? 'Cập nhật thất bại');
+      }
     } catch (e) {
       if (!mounted) return;
 

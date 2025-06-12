@@ -193,11 +193,10 @@ class _WorkspaceListModalState extends State<WorkspaceListModal> {
         child: Row(
           children: [
             if (widget.showAvatar) ...[
-              AvatarWidget(
-                width: 36,
-                height: 36,
+              AppAvatar(
+                size: 36,
                 fallbackText: workspace['name'],
-                borderRadius: 100,
+                shape: AvatarShape.circle,
               ),
               const SizedBox(width: 12),
             ],

@@ -1,183 +1,154 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:coka/core/utils/helpers.dart';
 
-class AvatarWidget extends StatelessWidget {
-  final String? imgUrl;
-  final double? width;
-  final double? height;
+enum AvatarShape { circle, rectangle }
+
+class AppAvatar extends StatelessWidget {
+  final String? imageUrl;
+  final double size;
+  final String? fallbackText;
+  final AvatarShape shape;
+  final double borderRadius;
+  final Color? fallbackBackgroundColor;
+  final Color fallbackTextColor;
+  final BoxBorder? outline;
   final BoxFit fit;
   final Widget? errorWidget;
-  final double? borderRadius;
-  final String? fallbackText;
-  final BoxBorder? outline;
+  final Widget? placeholder;
 
-  const AvatarWidget({
+  const AppAvatar({
     super.key,
-    this.imgUrl,
-    this.width,
-    this.height,
+    this.imageUrl,
+    this.size = 40.0,
+    this.fallbackText,
+    this.shape = AvatarShape.circle,
+    this.borderRadius = 0.0,
+    this.fallbackBackgroundColor,
+    this.fallbackTextColor = Colors.white,
+    this.outline,
     this.fit = BoxFit.cover,
     this.errorWidget,
-    this.borderRadius,
-    this.fallbackText,
-    this.outline,
+    this.placeholder,
   });
 
   String _getDisplayText() {
-    if (fallbackText == null || fallbackText!.isEmpty) return '';
+    if (fallbackText == null || fallbackText!.trim().isEmpty) return '';
 
     final words = fallbackText!.trim().split(' ');
     if (words.length == 1) {
-      return words[0][0].toUpperCase();
+      final word = words[0];
+       if (word.isEmpty) return '';
+      return word[0].toUpperCase();
     }
 
-    return '${words.first[0]}${words.last[0]}'.toUpperCase();
+    final firstInitial = words.first.isNotEmpty ? words.first[0] : '';
+    final lastInitial = words.last.isNotEmpty ? words.last[0] : '';
+
+    return '$firstInitial$lastInitial'.toUpperCase();
   }
 
-  static Widget _buildShimmerAvatar(double radius, [double? borderRadius]) {
+  static Widget _buildShimmerPlaceholder(double size, AvatarShape shape, double borderRadius) {
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
       child: Container(
-        width: radius * 2,
-        height: radius * 2,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: Colors.white,
-          shape: borderRadius != null ? BoxShape.rectangle : BoxShape.circle,
-          borderRadius:
-              borderRadius != null ? BorderRadius.circular(borderRadius) : null,
+          shape: shape == AvatarShape.circle ? BoxShape.circle : BoxShape.rectangle,
+          borderRadius: shape == AvatarShape.rectangle
+              ? BorderRadius.circular(borderRadius)
+              : null,
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (imgUrl == null || imgUrl!.isEmpty) {
-      return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: fallbackText != null
-              ? Helpers.getColorFromText(fallbackText!)
-              : Colors.grey[300],
-          borderRadius: BorderRadius.circular(borderRadius ?? 0),
-          border: outline,
-        ),
-        child: Center(
-          child: Text(
-            _getDisplayText(),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: (width ?? 40) * 0.4,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      );
-    }
+  Widget _buildFallbackAvatar(BuildContext context) {
+    final displayShape = shape == AvatarShape.circle ? BoxShape.circle : BoxShape.rectangle;
+    final displayBorderRadius = shape == AvatarShape.rectangle ? BorderRadius.circular(borderRadius) : null;
+    final text = _getDisplayText();
+    final hasText = text.isNotEmpty;
+    final bgColor = fallbackBackgroundColor ??
+        (hasText ? Helpers.getColorFromText(fallbackText!) : Colors.grey[300]);
 
     return Container(
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius ?? 0),
+        color: bgColor,
+        shape: displayShape,
+        borderRadius: displayBorderRadius,
         border: outline,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius ?? 0),
-        child: CachedNetworkImage(
-          imageUrl: Helpers.getAvatarUrl(imgUrl!),
-          width: width,
-          height: height,
-          fit: fit,
-          placeholder: (context, url) => _buildShimmerAvatar(
-              width != null ? width! / 2 : 20, borderRadius),
-          errorWidget: (context, url, error) =>
-              errorWidget ?? const Icon(Icons.error),
-        ),
+      child: Center(
+        child: hasText
+            ? Text(
+                text,
+                style: TextStyle(
+                  color: fallbackTextColor,
+                  fontSize: size * 0.4, // Adjust font size relative to avatar size
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : Icon(
+                Icons.person, // Default icon if no text
+                color: fallbackTextColor.withValues(alpha: 0.6),
+                size: size * 0.6,
+              ),
       ),
     );
   }
-}
 
-class CircleAvatarWidget extends StatelessWidget {
-  final String? imgData;
-  final double radius;
-  final String? fallbackText;
-  final Color backgroundColor;
+  Widget _buildImageAvatar(BuildContext context) {
+    final effectivePlaceholder = placeholder ?? _buildShimmerPlaceholder(size, shape, borderRadius);
+    final effectiveErrorWidget = errorWidget ?? _buildFallbackAvatar(context); // Use fallback as error widget by default
 
-  const CircleAvatarWidget({
-    super.key,
-    this.imgData,
-    this.radius = 20,
-    this.fallbackText,
-    this.backgroundColor = Colors.blue,
-  });
+    final imageWidget = Image.network(
+      Helpers.getAvatarUrl(imageUrl!), // Use helper if needed
+      width: size,
+      height: size,
+      fit: fit,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return effectivePlaceholder;
+      },
+      errorBuilder: (context, error, stackTrace) => effectiveErrorWidget,
+    );
 
-  String _getDisplayText() {
-    if (fallbackText == null || fallbackText!.isEmpty) return '';
-
-    final words = fallbackText!.trim().split(' ');
-    if (words.length == 1) {
-      return words[0][0].toUpperCase();
+    if (shape == AvatarShape.circle) {
+      return Container(
+         decoration: BoxDecoration(
+           shape: BoxShape.circle,
+           border: outline,
+         ),
+         child: ClipOval(
+           child: imageWidget,
+         ),
+      );
+    } else {
+       return Container(
+         decoration: BoxDecoration(
+           shape: BoxShape.rectangle,
+           borderRadius: BorderRadius.circular(borderRadius),
+           border: outline,
+         ),
+         child: ClipRRect(
+           borderRadius: BorderRadius.circular(borderRadius),
+           child: imageWidget,
+         ),
+       );
     }
-
-    return '${words.first[0]}${words.last[0]}'.toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (imgData == null || imgData!.isEmpty) {
-      return Container(
-        width: radius * 2,
-        height: radius * 2,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            _getDisplayText(),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: radius * 0.7,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      );
+    if (imageUrl == null || imageUrl!.isEmpty) {
+      return _buildFallbackAvatar(context);
+    } else {
+      return _buildImageAvatar(context);
     }
-
-    return ClipOval(
-      child: SizedBox(
-        width: radius * 2,
-        height: radius * 2,
-        child: CachedNetworkImage(
-          imageUrl: Helpers.getAvatarUrl(imgData!),
-          fit: BoxFit.cover,
-          placeholder: (context, url) =>
-              AvatarWidget._buildShimmerAvatar(radius),
-          errorWidget: (context, url, error) => Container(
-            width: radius * 2,
-            height: radius * 2,
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                _getDisplayText(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: radius * 0.7,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import './stage_select.dart';
 import './journey_item.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../../../../../models/stage.dart';
+import 'package:intl/intl.dart';
 
 class CustomerJourney extends ConsumerStatefulWidget {
   const CustomerJourney({super.key});
@@ -18,7 +20,7 @@ class CustomerJourney extends ConsumerStatefulWidget {
 class _CustomerJourneyState extends ConsumerState<CustomerJourney>
     with SingleTickerProviderStateMixin {
   final TextEditingController chatController = TextEditingController();
-  String selectedStageId = "";
+  Stage? selectedStage;
   final _focusNode = FocusNode();
   bool _isInputFocused = false;
   late AnimationController _iconAnimationController;
@@ -52,10 +54,91 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
     super.dispose();
   }
 
+  // Hàm nhóm các journey theo ngày
+  Map<String, List<dynamic>> _groupJourneysByDate(List<dynamic> journeys) {
+    final Map<String, List<dynamic>> groupedJourneys = {};
+    
+    for (final journey in journeys) {
+      if (journey['date'] == null) continue;
+      
+      final date = DateTime.parse(journey['date']);
+      final dateKey = DateTime(date.year, date.month, date.day).toIso8601String();
+      
+      if (!groupedJourneys.containsKey(dateKey)) {
+        groupedJourneys[dateKey] = [];
+      }
+      groupedJourneys[dateKey]!.add(journey);
+    }
+    
+    return groupedJourneys;
+  }
+
+  // Hàm tạo title cho ngày
+  String _getDateTitle(String dateKey) {
+    final date = DateTime.parse(dateKey);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    
+    if (date.isAtSameMomentAs(today)) {
+      return "Hôm nay";
+    } else if (date.isAtSameMomentAs(yesterday)) {
+      return "Hôm qua";
+    } else {
+      final weekDays = [
+        "Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", 
+        "Thứ năm", "Thứ sáu", "Thứ bảy"
+      ];
+      final weekDay = weekDays[date.weekday % 7];
+      return "$weekDay, ${date.day}/${date.month}/${date.year}";
+    }
+  }
+
+  // Widget tạo divider với time title
+  Widget _buildDateDivider(String dateTitle) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: -16), // Loại bỏ padding từ container cha
+      child: Row(
+        children: [
+          const Expanded(
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: Color(0xFFE8E8E8),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12), // Giảm margin
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), // Giảm padding
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F8F8),
+              borderRadius: BorderRadius.circular(8), // Giảm border radius
+            ),
+            child: Text(
+              dateTitle,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF666666),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Expanded(
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: Color(0xFFE8E8E8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _onFocusChange() {
-    if (_focusNode.hasFocus && selectedStageId.isEmpty) {
+    if (_focusNode.hasFocus && selectedStage == null) {
       setState(() {
-        selectedStageId = "new"; // Mặc định là trạng thái mới
+        // selectedStage sẽ được set khi user chọn trong StageSelect
         _isInputFocused = true;
       });
       _iconAnimationController.forward();
@@ -190,6 +273,10 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                 final params = GoRouterState.of(context).pathParameters;
                 final organizationId = params['organizationId']!;
                 final workspaceId = params['workspaceId']!;
+                
+                // Invalidate trước khi gọi để đảm bảo refresh
+                ref.invalidate(customerJourneyProvider(customerId));
+                
                 await ref
                     .read(customerJourneyProvider(customerId).notifier)
                     .loadJourneyList(
@@ -286,16 +373,38 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                               ? const Center(
                                   child: Text('Chưa có hành trình nào'),
                                 )
-                              : ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: journeyList.length,
-                                  itemBuilder: (context, index) {
-                                    return JourneyItem(
-                                      dataItem: journeyList[index],
-                                      isLast: index == journeyList.length - 1,
-                                    );
-                                  },
+                              : Column(
+                                  children: () {
+                                    final groupedJourneys = _groupJourneysByDate(journeyList);
+                                    final sortedKeys = groupedJourneys.keys.toList()
+                                      ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
+                                    
+                                    List<Widget> widgets = [];
+                                    
+                                    for (int i = 0; i < sortedKeys.length; i++) {
+                                      final dateKey = sortedKeys[i];
+                                      final journeys = groupedJourneys[dateKey]!;
+                                      final dateTitle = _getDateTitle(dateKey);
+                                      
+                                      // Thêm divider với time title
+                                      widgets.add(_buildDateDivider(dateTitle));
+                                      
+                                      // Thêm các journey items của ngày đó
+                                      for (int j = 0; j < journeys.length; j++) {
+                                        final isLastItemOfDay = j == journeys.length - 1;
+                                        final isLastItemOverall = i == sortedKeys.length - 1 && isLastItemOfDay;
+                                        
+                                        widgets.add(
+                                          JourneyItem(
+                                            dataItem: journeys[j],
+                                            isLast: isLastItemOverall,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                    
+                                    return widgets;
+                                  }(),
                                 ),
                         ),
                       ],
@@ -318,15 +427,17 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                       // Ngăn chặn sự kiện tap truyền xuống GestureDetector bên dưới
                     },
                     child: StageSelect(
-                      defaultStage: selectedStageId,
-                      selectedStage: (stage) {
+                      stage: selectedStage,
+                      setStage: (stage) {
                         setState(() {
-                          selectedStageId = stage;
+                          selectedStage = stage;
                         });
                       },
+                      orgId: GoRouterState.of(context).pathParameters['organizationId']!,
+                      workspaceId: GoRouterState.of(context).pathParameters['workspaceId']!,
                     ),
                   ),
-                Divider(height: 1, color: Colors.black.withOpacity(0.1)),
+                Divider(height: 1, color: Colors.black.withValues(alpha: 0.1)),
                 Container(
                   color: Colors.white,
                   padding: const EdgeInsets.only(top: 6, bottom: 10),
@@ -345,9 +456,7 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                           onTap: () {
                             setState(() {
                               _isInputFocused = true;
-                              if (selectedStageId.isEmpty) {
-                                selectedStageId = "new";
-                              }
+                              // selectedStage sẽ được set khi user chọn trong StageSelect
                             });
                           },
                           decoration: InputDecoration(
@@ -372,14 +481,6 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                             _showCallMethodBottomSheet();
                           } else {
                             if (chatController.text.trim().isEmpty) return;
-                            if (selectedStageId.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Vui lòng chọn trạng thái'),
-                                ),
-                              );
-                              return;
-                            }
 
                             final params =
                                 GoRouterState.of(context).pathParameters;
@@ -394,7 +495,7 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                                   .updateJourney(
                                     organizationId,
                                     workspaceId,
-                                    selectedStageId,
+                                    selectedStage?.id ?? '',
                                     chatController.text.trim(),
                                   );
                               chatController.clear();

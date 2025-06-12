@@ -1,12 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Image;
+import 'package:flutter/widgets.dart' as widgets;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rive/rive.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
+import 'dart:io';
 import '../../../../../../../core/theme/app_colors.dart';
-import '../../../../../../../shared/widgets/avatar_widget.dart';
 import '../../../../../../../shared/widgets/custom_container.dart';
 import '../../../../../../../shared/widgets/awesome_alert.dart';
 import '../../../../../../../shared/widgets/image_viewer_page.dart';
@@ -14,6 +18,9 @@ import '../../../../../../../providers/customer_provider.dart';
 import '../../../../../../../api/repositories/customer_repository.dart';
 import '../../../../../../../api/api_client.dart';
 import '../widgets/customer_menu.dart';
+import '../widgets/assign_to_bottomsheet.dart';
+import 'package:coka/shared/widgets/avatar_widget.dart';
+
 
 final customerRepositoryProvider = Provider((ref) {
   return CustomerRepository(ApiClient());
@@ -38,6 +45,9 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
   List<Map<String, dynamic>> subEmailList = [];
   List<Map<String, dynamic>> detailProfileList = [];
   String? fbUrl, zaloUrl;
+  final _picker = ImagePicker();
+  XFile? _pickedImage;
+  bool _isUploadingAvatar = false;
 
   @override
   void initState() {
@@ -149,6 +159,8 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
           'rating': rating.toInt(),
         });
 
+        ref.invalidate(customerJourneyProvider(customerId));
+        
         await ref
             .read(customerJourneyProvider(customerId).notifier)
             .loadJourneyList(organizationId, workspaceId);
@@ -168,7 +180,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
-      path: phoneNumber.replaceFirst("84", "0"),
+      path: phoneNumber,
     );
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
@@ -183,7 +195,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
   Future<void> _sendSms(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'sms',
-      path: phoneNumber.replaceFirst("84", "0"),
+      path: phoneNumber,
     );
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
@@ -207,6 +219,99 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
         title: "Lỗi",
         desc: "Không thể gửi email",
       );
+    }
+  }
+
+  Future<void> _openImagePicker() async {
+    if (_isUploadingAvatar) return; // Prevent multiple uploads
+    
+    final pickedImage = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 300,
+      maxHeight: 300,
+      imageQuality: 85,
+    );
+    if (pickedImage != null) {
+      setState(() {
+        _pickedImage = pickedImage;
+      });
+      // Upload in background after UI update
+      _updateAvatar();
+    }
+  }
+
+  Future<void> _updateAvatar() async {
+    if (_pickedImage == null) return;
+
+    setState(() {
+      _isUploadingAvatar = true;
+    });
+
+    try {
+      final params = GoRouterState.of(context).pathParameters;
+      final organizationId = params['organizationId']!;
+      final workspaceId = params['workspaceId']!;
+      final customerId = widget.customerDetail['id'];
+
+      // Prepare form data with avatar file - using correct field name 'file' according to API
+      final formData = FormData();
+      formData.files.add(
+        MapEntry(
+          'file',
+          await MultipartFile.fromFile(
+            _pickedImage!.path,
+            filename: _pickedImage!.path.split('/').last,
+            contentType: MediaType("image", "jpeg"),
+          ),
+        ),
+      );
+
+      // Update customer avatar using dedicated API
+      await ref.read(customerRepositoryProvider).updateAvatar(
+        organizationId,
+        workspaceId,
+        customerId,
+        formData,
+      );
+
+      if (mounted) {
+        // Refresh customer detail
+        await ref
+            .read(customerDetailProvider(widget.customerDetail['id']).notifier)
+            .loadCustomerDetail(organizationId, workspaceId);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã cập nhật avatar thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Reset picked image
+        setState(() {
+          _pickedImage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể cập nhật avatar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        
+        // Reset picked image on error
+        setState(() {
+          _pickedImage = null;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingAvatar = false;
+        });
+      }
     }
   }
 
@@ -267,8 +372,9 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         title: const Text(
-          'Thông tin cơ bản',
+          'Chi tiết khách hàng',
           style: TextStyle(
             color: AppColors.text,
             fontSize: 16,
@@ -280,7 +386,166 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
           onPressed: () => context.pop(),
         ),
         actions: [
-          CustomerMenu(customerDetail: widget.customerDetail),
+          MenuAnchor(
+            style: MenuStyle(
+              backgroundColor: const WidgetStatePropertyAll(Colors.white),
+              elevation: const WidgetStatePropertyAll(4),
+              shadowColor: WidgetStatePropertyAll(Colors.black.withValues(alpha: 0.08)),
+              shape: WidgetStatePropertyAll(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(
+                    color: Color(0xFFE4E7EC),
+                    width: 1,
+                  ),
+                ),
+              ),
+              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 8)),
+            ),
+            builder: (context, controller, child) {
+              return IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+              );
+            },
+            menuChildren: [
+              MenuItemButton(
+                style: const ButtonStyle(
+                  padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                  minimumSize: WidgetStatePropertyAll(Size.zero),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                leadingIcon: const Icon(
+                  Icons.swap_horiz,
+                  size: 20,
+                  color: Color(0xFF667085),
+                ),
+                onPressed: () {
+                  final params = GoRouterState.of(context).pathParameters;
+                  final organizationId = params['organizationId']!;
+                  final workspaceId = params['workspaceId']!;
+                  final customerId = widget.customerDetail['id'];
+                  
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => AssignToBottomSheet(
+                      organizationId: organizationId,
+                      workspaceId: workspaceId,
+                      customerId: customerId,
+                      defaultAssignees: widget.customerDetail['assignToUsers'] != null 
+                          ? List<Map<String, dynamic>>.from(widget.customerDetail['assignToUsers']) 
+                          : [],
+                      onSelected: (assignData) {
+                        // Callback này không còn được sử dụng vì đã xử lý trực tiếp trong bottomsheet
+                      },
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Chuyển phụ trách',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF101828),
+                  ),
+                ),
+              ),
+              MenuItemButton(
+                style: const ButtonStyle(
+                  padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                  minimumSize: WidgetStatePropertyAll(Size.zero),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                leadingIcon: const Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: Color(0xFF667085),
+                ),
+                onPressed: () {
+                  final params = GoRouterState.of(context).pathParameters;
+                  final organizationId = params['organizationId']!;
+                  final workspaceId = params['workspaceId']!;
+                  final customerId = widget.customerDetail['id'];
+                  
+                  context.push(
+                    '/organization/$organizationId/workspace/$workspaceId/customers/$customerId/edit',
+                    extra: widget.customerDetail,
+                  );
+                },
+                child: const Text(
+                  'Chỉnh sửa khách hàng',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF101828),
+                  ),
+                ),
+              ),
+              MenuItemButton(
+                style: const ButtonStyle(
+                  padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                  minimumSize: WidgetStatePropertyAll(Size.zero),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                leadingIcon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: Colors.red,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Xóa khách hàng?'),
+                      content: const Text('Hành động này không thể hoàn tác.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => context.pop(),
+                          child: const Text('Hủy'),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            try {
+                              final params = GoRouterState.of(context).pathParameters;
+                              final organizationId = params['organizationId']!;
+                              final workspaceId = params['workspaceId']!;
+                              final customerId = widget.customerDetail['id'];
+                              
+                              await ref.read(customerDetailProvider(customerId).notifier).deleteCustomer(organizationId, workspaceId);
+                              ref.read(customerListProvider.notifier).removeCustomer(customerId);
+                              if (!context.mounted) return;
+                              context.pop();
+                              context.pop();
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa khách hàng')));
+                            } catch (e) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                            }
+                          },
+                          child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Xóa khách hàng',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -366,21 +631,29 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
                                 );
                               }
                             },
-                            child: AvatarWidget(
-                              fallbackText: customerData['fullName'] ?? '',
-                              imgUrl: customerData['avatar'],
-                              width: 80,
-                              height: 80,
-                              borderRadius: 40,
-                            ),
+                            child: _pickedImage != null
+                                ? ClipOval(
+                                    child: widgets.Image.file(
+                                      File(_pickedImage!.path),
+                                      width: 68,
+                                      height: 68,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : AppAvatar(
+                                    imageUrl: customerData['avatar'],
+                                    fallbackText: customerData['fullName'] ?? '',
+                                    size: 68,
+                                    shape: AvatarShape.circle,
+                                  ),
                           ),
                         ),
                         Positioned(
                           right: 0,
                           bottom: 0,
                           child: GestureDetector(
-                            onTap: () {
-                              // TODO: Implement image picker
+                            onTap: _isUploadingAvatar ? null : () {
+                              _openImagePicker();
                             },
                             child: Container(
                               height: 30,
@@ -388,17 +661,28 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: const Color(0xFFe5f4ff),
+                                color: _isUploadingAvatar 
+                                    ? Colors.grey[300] 
+                                    : const Color(0xFFe5f4ff),
                                 border: Border.all(
                                   color: Colors.white,
                                   width: 2,
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.camera_alt_outlined,
-                                color: Colors.black,
-                                size: 18,
-                              ),
+                              child: _isUploadingAvatar
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.camera_alt_outlined,
+                                      color: Colors.black,
+                                      size: 18,
+                                    ),
                             ),
                           ),
                         ),
@@ -411,7 +695,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
             const Gap(18),
             _buildInfoSection(
               title: "Số điện thoại",
-              mainValue: customerData["phone"]?.replaceFirst("84", "0"),
+              mainValue: customerData["rawPhone"],
               subValues: subPhoneList,
             ),
             if (customerData["email"] != null) ...[

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../../../api/repositories/team_repository.dart';
-import '../../../../../../api/api_client.dart';
+import 'dart:async';
+import 'package:coka/api/repositories/team_repository.dart';
+import 'package:coka/api/api_client.dart';
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../shared/widgets/avatar_widget.dart';
+import '../../../../../../shared/widgets/skeleton_widget.dart';
 
 class AssigneeData {
   final String id;
@@ -214,12 +216,11 @@ class _AssigneeSelectionDialogState extends State<AssigneeSelectionDialog>
   Widget _buildListItem(AssigneeData assignee) {
     final isSelected = _selectedAssignees.any((item) => item.id == assignee.id);
     return ListTile(
-      leading: AvatarWidget(
-        width: 40,
-        height: 40,
-        imgUrl: assignee.avatar,
+      leading: AppAvatar(
+        size: 40,
+        shape: AvatarShape.circle,
+        imageUrl: assignee.avatar,
         fallbackText: assignee.name,
-        borderRadius: 100,
       ),
       title: Text(
         assignee.name,
@@ -252,7 +253,7 @@ class _AssigneeSelectionDialogState extends State<AssigneeSelectionDialog>
         ),
         Expanded(
           child: _isLoadingMembers
-              ? const Center(child: CircularProgressIndicator())
+              ? const AssigneeListSkeleton()
               : _members.isEmpty
                   ? const Center(
                       child: Text('Không tìm thấy thành viên nào'),
@@ -281,7 +282,7 @@ class _AssigneeSelectionDialogState extends State<AssigneeSelectionDialog>
         ),
         Expanded(
           child: _isLoadingTeams
-              ? const Center(child: CircularProgressIndicator())
+              ? const AssigneeListSkeleton()
               : _teams.isEmpty
                   ? const Center(
                       child: Text('Không tìm thấy đội nào'),

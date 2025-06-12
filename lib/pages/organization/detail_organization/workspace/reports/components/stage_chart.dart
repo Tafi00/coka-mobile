@@ -12,13 +12,13 @@ class StageChart extends ConsumerWidget {
   final bool isLoading;
 
   const StageChart({
-    Key? key,
+    super.key,
     required this.data,
     required this.chartTypes,
     required this.currentChartType,
     required this.onChartTypeChanged,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,8 +137,9 @@ class StageChart extends ConsumerWidget {
                         : Column(
                             children: [
                               ...stages.map((element) {
-                                if (element is! Map<String, dynamic>)
+                                if (element is! Map<String, dynamic>) {
                                   return const SizedBox.shrink();
+                                }
 
                                 final name =
                                     element["name"]?.toString() ?? 'Unknown';
@@ -173,20 +174,30 @@ class StageChart extends ConsumerWidget {
                                       child: Row(
                                         children: [
                                           ...stageData.entries.map((e) {
-                                            final groupName =
-                                                _getGroupNameFromKey(e.key);
-                                            final bgColor =
-                                                _getColorFromKey(e.key);
+                                            final stageName = e.key;
+                                            final stageInfo = metadata[stageName];
+                                            
+                                            // Lấy màu từ metadata nếu có
+                                            String hexColor = "#9F87FF"; // Màu mặc định
+                                            
+                                            if (stageInfo != null && stageInfo is Map<String, dynamic> && stageInfo.containsKey("hex")) {
+                                              hexColor = stageInfo["hex"];
+                                            }
+                                            
+                                            // Chuyển đổi hex thành Color
+                                            final bgColor = Color(int.parse(
+                                                "0xFF${hexColor.substring(1)}"));
+                                                
                                             final isLastIndex = _isLastElement(
                                                 stageData, e.key);
                                             final percent = isLastIndex
-                                                ? 100 - totalPercentage
+                                                ? (100 - totalPercentage).clamp(0, 100).toInt()
                                                 : _getRoundedPercentage(
                                                     stageData, e.key);
 
                                             totalPercentage += percent;
-                                            return percent == 0
-                                                ? Container()
+                                            return percent <= 0
+                                                ? const SizedBox.shrink()
                                                 : Column(
                                                     children: [
                                                       const SizedBox(
@@ -239,13 +250,13 @@ class StageChart extends ConsumerWidget {
                                                       )
                                                     ],
                                                   );
-                                          }).toList(),
+                                          }),
                                         ],
                                       ),
                                     )
                                   ],
                                 );
-                              }).toList(),
+                              }),
                             ],
                           ),
                 const SizedBox(
@@ -280,162 +291,108 @@ class StageChart extends ConsumerWidget {
   Widget _buildSourceLegend(Map<String, dynamic> metadata, bool isPercentShow) {
     return Builder(builder: (context) {
       final screenWidth = MediaQuery.of(context).size.width;
-      return Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: SizedBox(
-              width: (screenWidth - 32) / 2 + 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.circle,
-                        color: Color(0xFF92F7A8),
-                        size: 13,
-                      ),
-                      const SizedBox(
-                        width: 3,
-                      ),
-                      const Text(
-                        'Giao dịch',
-                        style: TextStyle(
-                            color: Color(0xB2000000),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(
-                        width: 4,
-                      ),
-                      Text(
-                        "${metadata["transaction"] ?? 0}",
-                        style: const TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w500),
-                      ),
-                      if (isPercentShow)
-                        Text(
-                            "(${_getRoundedPercentage(metadata, "transaction")}%)",
-                            style: const TextStyle(
-                                fontSize: 11, color: Color(0xB2000000))),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.circle,
-                        color: Color(0xFFFEBE99),
-                        size: 13,
-                      ),
-                      const SizedBox(
-                        width: 3,
-                      ),
-                      const Text(
-                        'Không tiềm năng',
-                        style: TextStyle(
-                            color: Color(0xB2000000),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(
-                        width: 4,
-                      ),
-                      Text("${metadata["unpotential"] ?? 0}",
-                          style: const TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w500)),
-                      if (isPercentShow)
-                        Text(
-                            "(${_getRoundedPercentage(metadata, "unpotential")}%)",
-                            style: const TextStyle(
-                                fontSize: 11, color: Color(0xB2000000))),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      
+      // Lọc các mục thực sự chứa thông tin trạng thái (các key có giá trị là Map và chứa hex + count)
+      final legendEntries = metadata.entries.where((entry) => 
+        entry.value is Map<String, dynamic> && 
+        entry.value.containsKey("hex")
+      ).toList();
+      
+      // Nếu không có phần tử nào, trả về widget trống
+      if (legendEntries.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      
+      final int itemsPerRow = legendEntries.length > 4 ? 2 : legendEntries.length;
+      // Đảm bảo itemsPerRow không bị 0
+      final int safeItemsPerRow = itemsPerRow > 0 ? itemsPerRow : 1;
+      // Tính số hàng cần thiết, đảm bảo không chia cho 0
+      final int rows = ((legendEntries.length + safeItemsPerRow - 1) / safeItemsPerRow).floor();
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(rows, (rowIndex) {
+          final startIndex = rowIndex * safeItemsPerRow;
+          final endIndex = (startIndex + safeItemsPerRow <= legendEntries.length) 
+              ? startIndex + safeItemsPerRow 
+              : legendEntries.length;
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.circle,
-                      color: Color(0xFFA4F3FF),
-                      size: 13,
-                    ),
-                    const SizedBox(
-                      width: 3,
-                    ),
-                    const Text(
-                      'Tiềm năng',
-                      style: TextStyle(
-                          color: Color(0xB2000000),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(
-                      width: 4,
-                    ),
-                    Text("${metadata["potential"] ?? 0}",
-                        style: const TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w500)),
-                    if (isPercentShow)
-                      Text("(${_getRoundedPercentage(metadata, "potential")}%)",
+                ...List.generate(endIndex - startIndex, (index) {
+                  final itemIndex = startIndex + index;
+                  // Kiểm tra chỉ số có hợp lệ không
+                  if (itemIndex < 0 || itemIndex >= legendEntries.length) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  final entry = legendEntries[itemIndex];
+                  final key = entry.key;
+                  final Map<String, dynamic> value = entry.value as Map<String, dynamic>;
+                  
+                  final String hexColor = value["hex"] as String? ?? "#9F87FF";
+                  final String name = value["name"] as String? ?? key;
+                  final int count = value["count"] as int? ?? 0;
+                  
+                  // Chuyển đổi hex sang color một cách an toàn
+                  Color color;
+                  try {
+                    color = Color(int.parse("0xFF${hexColor.substring(1)}"));
+                  } catch (e) {
+                    color = const Color(0xFF9F87FF); // Màu mặc định nếu chuyển đổi thất bại
+                  }
+                  
+                  // Tính toán chiều rộng an toàn
+                  final double itemWidth = (screenWidth - 32) / safeItemsPerRow;
+                  
+                  return Container(
+                    width: itemWidth,
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          color: color,
+                          size: 13,
+                        ),
+                        const SizedBox(
+                          width: 3,
+                        ),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                                color: Color(0xB2000000),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(
+                          width: 4,
+                        ),
+                        Text(
+                          "$count",
                           style: const TextStyle(
-                              fontSize: 11, color: Color(0xB2000000))),
-                  ],
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.circle,
-                      color: Color(0xFF9F87FF),
-                      size: 13,
+                              fontSize: 11, fontWeight: FontWeight.w500),
+                        ),
+                        if (isPercentShow)
+                          Text(
+                              "(${_getMetadataPercentage(metadata, key)}%)",
+                              style: const TextStyle(
+                                  fontSize: 11, color: Color(0xB2000000))),
+                      ],
                     ),
-                    const SizedBox(
-                      width: 3,
-                    ),
-                    const Text(
-                      'Không xác định',
-                      style: TextStyle(
-                          color: Color(0xB2000000),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(
-                      width: 4,
-                    ),
-                    Text("${metadata["undefined"] ?? 0}",
-                        style: const TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w500)),
-                    if (isPercentShow)
-                      Text(
-                        "(${_getRoundedPercentage(metadata, "undefined")}%)",
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xB2000000)),
-                      ),
-                  ],
-                )
+                  );
+                }),
               ],
             ),
-          )
-        ],
+          );
+        }),
       );
     });
   }
@@ -454,60 +411,76 @@ class StageChart extends ConsumerWidget {
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
-  String _getGroupNameFromKey(String key) {
-    if (key == "potential") {
-      return "Tiềm năng";
-    }
-    if (key == "transaction") {
-      return "Giao dịch";
-    }
-    if (key == "unpotential") {
-      return "Không tiềm năng";
-    }
-    if (key == "undefined") {
-      return "Không xác định";
-    }
-    if (key == "other") {
-      return "Khác";
-    }
-    return "";
-  }
-
-  Color _getColorFromKey(String key) {
-    if (key == "potential") {
-      return const Color(0xFFA4F3FF);
-    }
-    if (key == "transaction") {
-      return const Color(0xFF92F7A8);
-    }
-    if (key == "unpotential") {
-      return const Color(0xFFFEBE99);
-    }
-    if (key == "undefined") {
-      return const Color(0xFF9F87FF);
-    }
-    return const Color(0xFF9F87FF);
-  }
-
   bool _isLastElement(Map<String, dynamic> data, String key) {
     List keys = data.keys.toList();
     int index = keys.indexOf(key);
     return index == keys.length - 1;
   }
 
+  // Tính phần trăm cho dữ liệu trong stage
   int _getRoundedPercentage(Map<String, dynamic> data, String key) {
-    if (data.containsKey(key)) {
-      num total = 0;
-      data.forEach((_, value) {
-        total += (value as num? ?? 0);
+    try {
+      if (data.containsKey(key)) {
+        num total = 0;
+        data.forEach((_, value) {
+          if (value is num) {
+            total += value;
+          } else if (value is Map<String, dynamic> && value.containsKey("count")) {
+            total += (value["count"] as num? ?? 0);
+          }
+        });
+        
+        if (total <= 0) {
+          return 0;
+        }
+        
+        num itemValue = 0;
+        if (data[key] is num) {
+          itemValue = data[key] as num;
+        } else if (data[key] is Map<String, dynamic> && data[key].containsKey("count")) {
+          itemValue = (data[key]["count"] as num? ?? 0);
+        }
+        
+        double percentage = (itemValue / total) * 100.0;
+        if (percentage.isNaN || percentage.isInfinite) {
+          return 0;
+        }
+        return percentage.round();
+      }
+    } catch (e) {
+      print("Error calculating percentage: $e");
+    }
+    return 0;
+  }
+  
+  // Tính phần trăm riêng cho metadata
+  int _getMetadataPercentage(Map<String, dynamic> metadata, String key) {
+    try {
+      int total = 0;
+      
+      // Tính tổng số lượng từ tất cả các trạng thái
+      metadata.forEach((_, value) {
+        if (value is Map<String, dynamic> && value.containsKey("count")) {
+          total += (value["count"] as int? ?? 0);
+        }
       });
-      if (total == 0) {
+      
+      if (total <= 0) {
         return 0;
       }
-      double percentage = ((data[key] as num? ?? 0) / total) * 100.0;
+      
+      // Lấy số lượng cho trạng thái hiện tại
+      final Map<String, dynamic>? stageInfo = metadata[key] as Map<String, dynamic>?;
+      final int count = stageInfo != null ? (stageInfo["count"] as int? ?? 0) : 0;
+      
+      // Tính phần trăm
+      final double percentage = (count / total) * 100;
+      if (percentage.isNaN || percentage.isInfinite) {
+        return 0;
+      }
       return percentage.round();
-    } else {
-      // Trả về 0 nếu key không tồn tại trong map
+    } catch (e) {
+      print("Error calculating metadata percentage: $e");
       return 0;
     }
   }

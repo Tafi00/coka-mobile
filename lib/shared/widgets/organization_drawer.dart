@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:coka/core/theme/text_styles.dart';
 import 'package:coka/core/theme/app_colors.dart';
+import 'package:coka/pages/organization/join_organization_page.dart';
+import 'package:coka/pages/organization/invitation_page.dart';
+import 'package:coka/pages/organization/join_request_page.dart';
+import 'package:coka/pages/auth/complete_profile_page.dart';
+import 'package:coka/pages/settings_page.dart';
+// Corrected import path
 
 class OrganizationDrawer extends StatelessWidget {
   final Map<String, dynamic>? userInfo;
@@ -17,6 +23,23 @@ class OrganizationDrawer extends StatelessWidget {
     required this.organizations,
     required this.onLogout,
   });
+
+  bool get isAdminOrOwner {
+    if (organizations.isEmpty) return false;
+    
+    // Tìm tổ chức hiện tại trong danh sách
+    final currentOrg = organizations.firstWhere(
+      (org) => org['id'] == currentOrganizationId,
+      orElse: () => null,
+    );
+    
+    if (currentOrg == null) return false;
+    
+    // Kiểm tra type của người dùng trong tổ chức (theo response từ API)
+    // Type có thể là "ADMIN", "OWNER" hoặc "MEMBER"
+    final type = currentOrg['type']?.toString().toUpperCase() ?? '';
+    return type == 'ADMIN' || type == 'OWNER';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,12 +111,12 @@ class OrganizationDrawer extends StatelessWidget {
                               context.go('/organization/${org['id']}');
                               Navigator.pop(context);
                             },
-                            child: AvatarWidget(
-                              width: 40,
-                              height: 40,
+                            child: AppAvatar(
+                              size: 40,
+                              shape: AvatarShape.rectangle,
                               borderRadius: 8,
                               fallbackText: org['name'],
-                              imgUrl: org['avatar'],
+                              imageUrl: org['avatar'],
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -123,12 +146,12 @@ class OrganizationDrawer extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AvatarWidget(
-                        width: 48,
-                        height: 48,
+                      AppAvatar(
+                        size: 48,
+                        shape: AvatarShape.rectangle,
                         borderRadius: 26,
                         fallbackText: userInfo?['fullName'],
-                        imgUrl: userInfo?['avatar'],
+                        imageUrl: userInfo?['avatar'],
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -139,7 +162,9 @@ class OrganizationDrawer extends StatelessWidget {
                       const SizedBox(height: 4),
                       GestureDetector(
                         onTap: () {
-                          // TODO: Navigate to profile
+                          Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const CompleteProfilePage(),
+                          ));
                         },
                         child: const Text(
                           'Xem Profile của bạn',
@@ -166,7 +191,9 @@ class OrganizationDrawer extends StatelessWidget {
                           dense: true,
                           visualDensity: const VisualDensity(vertical: -1.0),
                           onTap: () {
-                            // TODO: Navigate to join organization
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => const JoinOrganizationPage(),
+                            ));
                           },
                         ),
                         ListTile(
@@ -175,32 +202,40 @@ class OrganizationDrawer extends StatelessWidget {
                           title: const Text('Lời mời'),
                           dense: true,
                           visualDensity: const VisualDensity(vertical: -1.0),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              '24',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => const InvitationPage(),
+                            ));
+                          },
+                        ),
+                        if (isAdminOrOwner)
+                          ListTile(
+                            leading: const Icon(Icons.person_search_outlined,
+                                color: AppColors.primary),
+                            title: const Text('Yêu cầu gia nhập'),
+                            dense: true,
+                            visualDensity: const VisualDensity(vertical: -1.0),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => JoinRequestPage(
+                                    organizationId: currentOrganizationId,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          onTap: () {
-                            // TODO: Navigate to invitations
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.workspace_premium_outlined,
-                              color: AppColors.primary),
-                          title: const Text('Nâng cấp tài khoản'),
-                          dense: true,
-                          visualDensity: const VisualDensity(vertical: -1.0),
-                          onTap: () {
-                            // TODO: Navigate to upgrade account
-                          },
-                        ),
+                        if (isAdminOrOwner)
+                          ListTile(
+                            leading: const Icon(Icons.workspace_premium_outlined,
+                                color: AppColors.primary),
+                            title: const Text('Nâng cấp tài khoản'),
+                            dense: true,
+                            visualDensity: const VisualDensity(vertical: -1.0),
+                            onTap: () {
+                              // TODO: Navigate to upgrade account
+                            },
+                          ),
                         ListTile(
                           leading: const Icon(Icons.help_outline,
                               color: AppColors.primary),
@@ -218,7 +253,14 @@ class OrganizationDrawer extends StatelessWidget {
                           dense: true,
                           visualDensity: const VisualDensity(vertical: -1.0),
                           onTap: () {
-                            // TODO: Navigate to settings
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => SettingsPage(
+                                  organizationId: currentOrganizationId,
+                                  userRole: isAdminOrOwner ? 'ADMIN' : 'MEMBER',
+                                ),
+                              ),
+                            );
                           },
                         ),
                         const Spacer(),

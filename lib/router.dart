@@ -8,9 +8,10 @@ import 'pages/organization/messages/messages_page.dart';
 import 'pages/organization/messages/message_settings_page.dart';
 import 'pages/organization/messages/chat_detail_page.dart';
 import 'pages/organization/campaigns/campaigns_page.dart';
-import 'pages/organization/campaigns/multiconnect_page.dart';
-import 'pages/organization/campaigns/aichatbot_page.dart';
-import 'pages/organization/campaigns/filldata_page.dart';
+import 'pages/organization/campaigns/multi_source_connection/multi_source_connection_page.dart';
+import 'pages/organization/campaigns/ai_chatbot/ai_chatbot_page.dart';
+import 'pages/organization/campaigns/ai_chatbot/create_chatbot_page.dart';
+import 'pages/organization/campaigns/ai_chatbot/edit_chatbot_page.dart';
 import 'pages/organization/detail_organization/workspace/detail_workspace_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/customers_page.dart';
 import 'pages/organization/detail_organization/workspace/teams/teams_page.dart';
@@ -20,7 +21,9 @@ import 'pages/organization/detail_organization/workspace/customers/customer_deta
 import 'pages/organization/detail_organization/workspace/customers/customer_detail/pages/customer_basic_info_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/edit_customer_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/add_customer_page.dart';
+import 'pages/organization/detail_organization/workspace/customers/import_googlesheet_page.dart';
 import 'pages/organization/settings/settings_page.dart';
+import 'pages/organization/notifications/notifications_page.dart';
 
 final appRoutes = [
   // Auth routes
@@ -43,6 +46,15 @@ final appRoutes = [
         organizationId: organizationId,
         conversationId: conversationId,
       );
+    },
+  ),
+  
+  // Multi-source connection route (độc lập, không dùng ShellRoute)
+  GoRoute(
+    path: '/organization/:organizationId/campaigns/multi-source-connection',
+    builder: (context, state) {
+      final organizationId = state.pathParameters['organizationId']!;
+      return MultiSourceConnectionPage(organizationId: organizationId);
     },
   ),
 
@@ -86,29 +98,39 @@ final appRoutes = [
           final organizationId = state.pathParameters['organizationId']!;
           return CampaignsPage(organizationId: organizationId);
         },
-        routes: [
-          GoRoute(
-            path: 'multiconnect',
-            builder: (context, state) {
-              final organizationId = state.pathParameters['organizationId']!;
-              return MulticonnectPage(organizationId: organizationId);
-            },
-          ),
-          GoRoute(
-            path: 'aichatbot',
-            builder: (context, state) {
-              final organizationId = state.pathParameters['organizationId']!;
-              return AIChatbotPage(organizationId: organizationId);
-            },
-          ),
-          GoRoute(
-            path: 'filldata',
-            builder: (context, state) {
-              final organizationId = state.pathParameters['organizationId']!;
-              return FillDataPage(organizationId: organizationId);
-            },
-          ),
-        ],
+      ),
+      // AI Chatbot routes
+      GoRoute(
+        path: '/organization/:organizationId/campaigns/ai-chatbot',
+        builder: (context, state) {
+          final organizationId = state.pathParameters['organizationId']!;
+          return AIChatbotPage(organizationId: organizationId);
+        },
+      ),
+      GoRoute(
+        path: '/organization/:organizationId/campaigns/ai-chatbot/create',
+        builder: (context, state) {
+          final organizationId = state.pathParameters['organizationId']!;
+          return CreateChatbotPage(organizationId: organizationId);
+        },
+      ),
+      GoRoute(
+        path: '/organization/:organizationId/campaigns/ai-chatbot/edit/:chatbotId',
+        builder: (context, state) {
+          final organizationId = state.pathParameters['organizationId']!;
+          final chatbotId = state.pathParameters['chatbotId']!;
+          return EditChatbotPage(
+            organizationId: organizationId,
+            chatbotId: chatbotId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/organization/:organizationId/notifications',
+        builder: (context, state) {
+          final organizationId = state.pathParameters['organizationId']!;
+          return NotificationsPage(organizationId: organizationId);
+        },
       ),
       GoRoute(
         path: '/organization/:organizationId/settings',
@@ -152,6 +174,17 @@ final appRoutes = [
               final organizationId = state.pathParameters['organizationId']!;
               final workspaceId = state.pathParameters['workspaceId']!;
               return AddCustomerPage(
+                organizationId: organizationId,
+                workspaceId: workspaceId,
+              );
+            },
+          ),
+          GoRoute(
+            path: 'import-googlesheet',
+            builder: (context, state) {
+              final organizationId = state.pathParameters['organizationId']!;
+              final workspaceId = state.pathParameters['workspaceId']!;
+              return ImportGoogleSheetPage(
                 organizationId: organizationId,
                 workspaceId: workspaceId,
               );

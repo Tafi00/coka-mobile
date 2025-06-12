@@ -60,7 +60,7 @@ class AwesomeTextField extends StatelessWidget {
                                   height: 20,
                                   width: 1,
                                   color:
-                                      const Color(0x00000000).withOpacity(0.12),
+                                      const Color(0x00000000).withValues(alpha: 0.12),
                                 )
                               ],
                             ),

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
 class ElevatedBtn extends StatelessWidget {
-  final VoidCallback onPressed;
+  final void Function()? onPressed;
   final Widget child;
-  final double circular;
-  final double paddingAllValue;
+  final double? circular;
+  final double? paddingAllValue;
   final Color? backgroundColor;
 
   const ElevatedBtn({
     super.key,
     required this.onPressed,
     required this.child,
-    this.circular = 8,
-    this.paddingAllValue = 8,
+    this.circular,
+    this.paddingAllValue,
     this.backgroundColor,
   });
 
@@ -21,12 +21,11 @@ class ElevatedBtn extends StatelessWidget {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor ?? Colors.white,
-        padding: EdgeInsets.all(paddingAllValue),
+        backgroundColor: backgroundColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(circular),
+          borderRadius: BorderRadius.circular(circular ?? 8),
         ),
-        elevation: 0,
+        padding: EdgeInsets.all(paddingAllValue ?? 8),
       ),
       child: child,
     );

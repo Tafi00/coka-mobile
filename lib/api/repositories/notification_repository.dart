@@ -6,16 +6,20 @@ class NotificationRepository {
   NotificationRepository(this._apiClient);
 
   Future<Map<String, dynamic>> getNotifications({
-    required String organizationId,
+    String? organizationId,
     int limit = 20,
     int offset = 0,
   }) async {
     final queryParams = {
-      'organizationId': organizationId,
       'limit': limit,
       'offset': offset,
       'sort': '[{ "Column": "CreatedDate", "Dir": "DESC" }]',
     };
+    
+    if (organizationId != null) {
+      queryParams['organizationId'] = organizationId;
+    }
+    
     final response = await _apiClient.dio.get(
       '/api/v1/notify/getlistpaging',
       queryParameters: queryParams,

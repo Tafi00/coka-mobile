@@ -15,9 +15,9 @@ class RatingChart extends ConsumerWidget {
   final Map<String, dynamic> data;
 
   const RatingChart({
-    Key? key,
+    super.key,
     required this.data,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

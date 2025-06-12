@@ -23,9 +23,9 @@ class CustomerValueChart extends ConsumerWidget {
   final Map<String, dynamic> data;
 
   const CustomerValueChart({
-    Key? key,
+    super.key,
     required this.data,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -163,8 +163,8 @@ class CustomerValueChart extends ConsumerWidget {
                   ),
                 ],
                 style: const MenuStyle(
-                  backgroundColor: MaterialStatePropertyAll(Colors.white),
-                  padding: MaterialStatePropertyAll(
+                  backgroundColor: WidgetStatePropertyAll(Colors.white),
+                  padding: WidgetStatePropertyAll(
                     EdgeInsets.symmetric(horizontal: 12),
                   ),
                 ),

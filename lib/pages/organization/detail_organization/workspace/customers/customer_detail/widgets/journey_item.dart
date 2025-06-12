@@ -5,6 +5,7 @@ import 'package:flutter_html_audio/flutter_html_audio.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:coka/shared/widgets/avatar_widget.dart';
 
 String getIconPath(type, isSource) {
   if (isSource) {
@@ -141,10 +142,10 @@ String? getSubtitle(type, oldValue, newValue) {
     }
     if (type == "CREATE_NOTE") return "\nNội dung: <a>${newData["Note"]}</a>";
     if (type == "UPDATE_ASSIGNTEAM") {
-      return "Sang: <a>${newData["Team"]?["Name"] ?? "Nhóm làm việc"}</a>";
+      return "<a>${newData["Team"]?["Name"] ?? "Sang: Nhóm làm việc"}</a>";
     }
     if (type == "UPDATE_ASSIGNTO") {
-      return "Sang: <a>${newData["User"]["FullName"]}</a>";
+      return "<a>${newData["User"]["FullName"]}</a>";
     }
     if (type == "CALL") {
       return "<div class='column'>Trạng thái: <a>${translateCallStatus(newData["CallStatus"])}</a>${newData["RecordingFile"] != null && newData["RecordingFile"] != "" ? "\n<audio controls> <source src='${newData["RecordingFile"]}' type='audio/mpeg'>Audio</audio>" : ""}</div>";
@@ -355,19 +356,13 @@ class JourneyItem extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 5),
-                                    if (avatar == null)
-                                      CircleAvatar(
-                                        radius: 9,
-                                        child: Text(
-                                          name.substring(0, 1).toUpperCase(),
-                                          style: const TextStyle(fontSize: 9),
-                                        ),
-                                      )
-                                    else
-                                      CircleAvatar(
-                                        backgroundImage: NetworkImage(avatar),
-                                        radius: 9,
-                                      ),
+                                    AppAvatar(
+                                      imageUrl: avatar,
+                                      fallbackText: name,
+                                      size: 18,
+                                      fallbackTextColor: Colors.black87,
+                                      fallbackBackgroundColor: Colors.grey[300],
+                                    ),
                                   ],
                                 ),
                               ],

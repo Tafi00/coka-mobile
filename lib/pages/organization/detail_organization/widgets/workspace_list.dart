@@ -117,11 +117,12 @@ class _WorkspaceListState extends State<WorkspaceList> {
         },
         child: Row(
           children: [
-            AvatarWidget(
-              width: 36,
-              height: 36,
+            AppAvatar(
+              imageUrl: workspace['image'],
               fallbackText: workspace['name'],
-              borderRadius: 100,
+              size: 40,
+              shape: AvatarShape.rectangle,
+              borderRadius: 8,
             ),
             const SizedBox(width: 12),
             Expanded(

@@ -8,10 +8,10 @@ class ReportsExample extends ConsumerWidget {
   final String workspaceId;
 
   const ReportsExample({
-    Key? key,
+    super.key,
     required this.organizationId,
     required this.workspaceId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

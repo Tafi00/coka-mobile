@@ -387,12 +387,11 @@ class _FilterModalState extends State<FilterModal> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        AvatarWidget(
-                                          width: 16,
-                                          height: 16,
-                                          imgUrl: item.avatar,
+                                        AppAvatar(
+                                          size: 16,
+                                          shape: AvatarShape.circle,
+                                          imageUrl: item.avatar,
                                           fallbackText: item.name,
-                                          borderRadius: 100,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(

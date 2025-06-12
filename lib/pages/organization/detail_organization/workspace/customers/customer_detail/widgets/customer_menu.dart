@@ -42,25 +42,12 @@ class CustomerMenu extends ConsumerWidget {
                 builder: (context) => AssignToBottomSheet(
                   organizationId: organizationId,
                   workspaceId: workspaceId,
-                  onSelected: (selectedUser) async {
-                    try {
-                      await ref
-                          .read(customerDetailProvider(customerDetail['id'])
-                              .notifier)
-                          .assignToCustomer(
-                            organizationId,
-                            workspaceId,
-                            selectedUser,
-                          );
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content:
-                                  Text('Có lỗi xảy ra khi chuyển phụ trách')),
-                        );
-                      }
-                    }
+                  customerId: customerDetail['id'],
+                  defaultAssignees: customerDetail['assignToUsers'] != null 
+                      ? List<Map<String, dynamic>>.from(customerDetail['assignToUsers']) 
+                      : [],
+                  onSelected: (selectedUser) {
+                    // Callback này không còn được sử dụng vì đã xử lý trực tiếp trong bottomsheet
                   },
                 ),
               ),

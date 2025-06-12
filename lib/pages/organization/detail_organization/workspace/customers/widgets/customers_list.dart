@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import 'package:collection/collection.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../../../api/repositories/customer_repository.dart';
 import '../../../../../../api/api_client.dart';
 import '../../../../../../core/theme/app_colors.dart';
-import '../../../../../../core/utils/helpers.dart';
-import '../../../../../../shared/widgets/avatar_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../providers/customer_provider.dart';
+import 'customer_list_item.dart';
 
 class CustomersList extends ConsumerStatefulWidget {
   final String organizationId;
@@ -34,18 +31,52 @@ class CustomersList extends ConsumerStatefulWidget {
   ConsumerState<CustomersList> createState() => _CustomersListState();
 }
 
+extension CustomersListExtension on _CustomersListState {
+  // Method public để trigger refresh từ bên ngoài
+  void triggerRefresh() {
+    print('CustomersListExtension: triggerRefresh called');
+    if (mounted) {
+      try {
+        setState(() {
+          _isFirstLoad = true;
+        });
+        _pagingController.refresh();
+      } catch (e) {
+        print('CustomersListExtension: Error during triggerRefresh: $e');
+      }
+    }
+  }
+}
+
 class _CustomersListState extends ConsumerState<CustomersList> {
   late final PagingController<int, Map<String, dynamic>> _pagingController;
   final int _limit = 20;
   final _mapEquality = const MapEquality<String, dynamic>();
   final _customerRepository = CustomerRepository(ApiClient());
   bool _isFirstLoad = true;
-
+  
   @override
   void initState() {
     super.initState();
-    _pagingController = PagingController(firstPageKey: 0);
-    _pagingController.addPageRequestListener(_fetchPage);
+    _pagingController = PagingController<int, Map<String, dynamic>>(
+      getNextPageKey: (state) {
+        // Lần đầu tiên sẽ bắt đầu từ offset 0
+        final currentOffset = state.keys?.last ?? -_limit; // Trick để lần đầu có offset = 0
+        
+        // Nếu page cuối cùng có ít hơn limit items, thì đã hết data
+        final lastPage = state.pages?.last ?? [];
+        if (lastPage.length < _limit && lastPage.isNotEmpty) {
+          print('CustomersList: No more data - lastPageSize: ${lastPage.length} < $_limit');
+          return null;
+        }
+        
+        final nextOffset = currentOffset + _limit;
+        print('CustomersList: getNextPageKey - currentOffset: $currentOffset, nextOffset: $nextOffset, lastPageSize: ${lastPage.length}');
+        
+        return nextOffset;
+      },
+      fetchPage: _fetchPage,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pagingController.refresh();
@@ -61,15 +92,27 @@ class _CustomersListState extends ConsumerState<CustomersList> {
   @override
   void didUpdateWidget(CustomersList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.stageGroupId != widget.stageGroupId ||
+    // Chỉ refresh khi có thay đổi quan trọng
+    bool hasImportantChanges = oldWidget.stageGroupId != widget.stageGroupId ||
         oldWidget.organizationId != widget.organizationId ||
         oldWidget.workspaceId != widget.workspaceId ||
-        oldWidget.searchQuery != widget.searchQuery ||
-        !_mapEquality.equals(oldWidget.queryParams, widget.queryParams)) {
+        oldWidget.searchQuery != widget.searchQuery;
+        
+    // Kiểm tra nếu có thay đổi query params quan trọng
+    bool hasQueryParamChanges = false;
+    if (!_mapEquality.equals(oldWidget.queryParams, widget.queryParams)) {
+      // Bỏ qua tham số offset vì nó thay đổi khi phân trang
+      Map<String, dynamic> oldParams = Map<String, dynamic>.from(oldWidget.queryParams)..remove('offset');
+      Map<String, dynamic> newParams = Map<String, dynamic>.from(widget.queryParams)..remove('offset');
+      hasQueryParamChanges = !_mapEquality.equals(oldParams, newParams);
+    }
+    
+    if (hasImportantChanges || hasQueryParamChanges) {
       setState(() {
         _isFirstLoad = true;
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Sử dụng Future.delayed để tránh nhiều refresh liên tiếp
+      Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           _pagingController.refresh();
         }
@@ -77,47 +120,51 @@ class _CustomersListState extends ConsumerState<CustomersList> {
     }
   }
 
-  Future<void> _fetchPage(int pageKey) async {
-    if (!mounted) return;
+  Future<List<Map<String, dynamic>>> _fetchPage(int pageKey) async {
+    if (!mounted) return [];
 
     try {
       final Map<String, dynamic> params =
           Map<String, dynamic>.from(widget.queryParams);
+      
+      // Đảm bảo offset được set đúng
       params['offset'] = pageKey;
       params['limit'] = _limit;
       params['searchText'] = widget.searchQuery;
       params['stageGroupId'] = widget.stageGroupId;
 
-      await Future.microtask(() async {
-        await ref.read(customerListProvider.notifier).loadCustomers(
-              widget.organizationId,
-              widget.workspaceId,
-              params
-                  .map((key, value) => MapEntry(key, value?.toString() ?? '')),
-            );
-      });
+      print('CustomersList: Fetching page with offset: $pageKey, limit: $_limit');
 
-      if (!mounted) return;
+      // Gọi API trực tiếp thay vì qua provider để tránh cache conflicts
+      final response = await _customerRepository.getCustomers(
+        widget.organizationId,
+        widget.workspaceId,
+        queryParameters: params.map((key, value) => MapEntry(key, value?.toString() ?? '')),
+      );
 
-      final customers = ref.read(customerListProvider).value ?? [];
-      final isLastPage = customers.length < _limit;
+      if (!mounted) return [];
 
-      setState(() {
-        _isFirstLoad = false;
-      });
-
-      if (isLastPage) {
-        _pagingController.appendLastPage(customers);
-      } else {
-        _pagingController.appendPage(customers, pageKey + _limit);
-      }
-    } catch (e) {
+      final items = response['content'] as List;
+      final customers = items.cast<Map<String, dynamic>>();
+      
+      print('CustomersList: Loaded ${customers.length} customers for offset: $pageKey');
+      
       if (mounted) {
         setState(() {
           _isFirstLoad = false;
         });
-        _pagingController.error = e;
       }
+
+      return customers;
+
+    } catch (e) {
+      print('CustomersList: Error fetching page $pageKey: $e');
+      if (mounted) {
+        setState(() {
+          _isFirstLoad = false;
+        });
+      }
+      rethrow;
     }
   }
 
@@ -168,187 +215,100 @@ class _CustomersListState extends ConsumerState<CustomersList> {
     );
   }
 
-  Widget _buildCustomerItem(Map<String, dynamic> customer) {
-    final assignToUser = customer['assignToUser'];
-    final stage = customer['stage'];
-    final createdDate = DateTime.parse(customer['createdDate']);
-    final timeAgo = timeago.format(createdDate, locale: 'vi');
-    final isNewStage = stage?['name'] == 'Mới';
+  @override
+  Widget build(BuildContext context) {
+    // Listen to customer assignment changes để auto-refresh khi có assignment update
+    ref.listen<int>(customerAssignmentRefreshProvider, (previous, next) {
+      if (previous != null && previous != next && mounted) {
+        print('CustomersList: Assignment change detected, refreshing list');
+        if (mounted) {
+          try {
+            setState(() {
+              _isFirstLoad = true;
+            });
+            _pagingController.refresh();
+          } catch (e) {
+            print('CustomersList: Error during assignment refresh: $e');
+          }
+        }
+      }
+    });
+    
+    // Đơn giản hóa - chỉ listen thông qua customerAssignmentRefreshProvider
 
-    return InkWell(
-      onTap: () {
-        context.push(
-          '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers/${customer['id']}',
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        print('CustomersList: Pull to refresh triggered');
+        if (mounted) {
+          setState(() {
+            _isFirstLoad = true;
+          });
+          
+          // Reset paging controller về page đầu tiên
+          _pagingController.refresh();
+          widget.onRefresh?.call();
+        }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AvatarWidget(
-              imgUrl: null,
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              fallbackText: customer['fullName'],
+      child: PagingListener<int, Map<String, dynamic>>(
+        controller: _pagingController,
+        builder: (context, state, fetchNextPage) => PagedListView<int, Map<String, dynamic>>(
+          state: state,
+          fetchNextPage: fetchNextPage,
+          builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
+            itemBuilder: (context, customer, index) => CustomerListItem(
+              customer: customer,
+              organizationId: widget.organizationId,
+              workspaceId: widget.workspaceId,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          customer['fullName'] ?? 'Không có tên',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight:
-                                isNewStage ? FontWeight.w500 : FontWeight.w400,
-                            color: AppColors.text,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        timeAgo,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF828489),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  if (stage != null)
-                    Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Helpers.getTabBadgeColor(
-                              Helpers.getStageGroupName(stage['id']) ?? '',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          stage['name'] ?? '',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight:
-                                isNewStage ? FontWeight.w500 : FontWeight.w400,
-                            color: AppColors.text,
-                          ),
-                        ),
-                      ],
+            firstPageProgressIndicatorBuilder: (context) => _isFirstLoad
+                ? Column(
+                    children: List.generate(
+                      5,
+                      (index) => _buildShimmerItem(),
                     ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      if (assignToUser != null) ...[
-                        AvatarWidget(
-                          imgUrl: assignToUser['avatar'],
-                          width: 16,
-                          height: 16,
-                          borderRadius: 8,
-                          fallbackText: assignToUser['fullName'],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          assignToUser['fullName'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFF828489),
-                          ),
-                        ),
-                      ],
-                    ],
+                  )
+                : const SizedBox.shrink(),
+            newPageProgressIndicatorBuilder: (context) => _buildShimmerItem(),
+            firstPageErrorIndicatorBuilder: (context) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Có lỗi xảy ra khi tải danh sách khách hàng',
+                    style: TextStyle(
+                      color: AppColors.text,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isFirstLoad = true;
+                      });
+                      _pagingController.refresh();
+                    },
+                    child: const Text(
+                      'Thử lại',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Listen to changes in customerListProvider
-    ref.listen(customerListProvider, (previous, next) {
-      if (mounted && !_isFirstLoad) {
-        _pagingController.refresh();
-        widget.onRefresh?.call();
-      }
-    });
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() {
-          _isFirstLoad = true;
-        });
-        _pagingController.refresh();
-        widget.onRefresh?.call();
-      },
-      child: PagedListView<int, Map<String, dynamic>>(
-        pagingController: _pagingController,
-        builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
-          itemBuilder: (context, customer, index) =>
-              _buildCustomerItem(customer),
-          firstPageProgressIndicatorBuilder: (context) => _isFirstLoad
-              ? Column(
-                  children: List.generate(
-                    5,
-                    (index) => _buildShimmerItem(),
-                  ),
-                )
-              : const SizedBox.shrink(),
-          newPageProgressIndicatorBuilder: (context) => _buildShimmerItem(),
-          firstPageErrorIndicatorBuilder: (context) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Có lỗi xảy ra khi tải danh sách khách hàng',
-                  style: TextStyle(
-                    color: AppColors.text,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _isFirstLoad = true;
-                    });
-                    _pagingController.refresh();
-                  },
-                  child: const Text(
-                    'Thử lại',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+            noItemsFoundIndicatorBuilder: (context) => _isFirstLoad
+                ? const SizedBox.shrink()
+                : const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('Không có khách hàng nào'),
                     ),
                   ),
-                ),
-              ],
-            ),
           ),
-          noItemsFoundIndicatorBuilder: (context) => _isFirstLoad
-              ? const SizedBox.shrink()
-              : const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Không có khách hàng nào'),
-                  ),
-                ),
         ),
       ),
     );

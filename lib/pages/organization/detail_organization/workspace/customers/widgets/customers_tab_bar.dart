@@ -32,6 +32,12 @@ class _CustomersTabBarState extends State<CustomersTabBar> {
     'Không tiềm năng': 0,
     'Chưa xác định': 0,
   };
+  
+  // Biến để kiểm soát việc load dữ liệu
+  bool _isLoading = false;
+  
+  // Lưu trữ params cuối cùng để tránh gọi lại API khi params không thay đổi
+  Map<String, String>? _lastParams;
 
   @override
   void initState() {
@@ -66,6 +72,9 @@ class _CustomersTabBarState extends State<CustomersTabBar> {
   }
 
   Future<void> _fetchCustomerCounts() async {
+    // Nếu đang trong quá trình lấy dữ liệu, bỏ qua
+    if (_isLoading) return;
+    
     try {
       final Map<String, String> params = {
         'workspaceId': widget.workspaceId,
@@ -73,12 +82,22 @@ class _CustomersTabBarState extends State<CustomersTabBar> {
         ...widget.queryParams
             .map((key, value) => MapEntry(key, value.toString())),
       };
-
+      
+      // So sánh với params trước đó, nếu giống nhau thì không gọi lại API
+      if (_lastParams != null && 
+          _mapEquality.equals(_lastParams as Map<String, dynamic>, params as Map<String, dynamic>)) {
+        return;
+      }
+      
+      _isLoading = true;
       final response = await _reportRepository.getStatisticsByStageGroup(
         widget.organizationId,
         widget.workspaceId,
         queryParameters: params,
       );
+      
+      // Cập nhật params cuối cùng
+      _lastParams = Map<String, String>.from(params);
 
       if (mounted) {
         setState(() {
@@ -91,10 +110,14 @@ class _CustomersTabBarState extends State<CustomersTabBar> {
             total += count;
           }
           _customerCounts['Tất cả'] = total;
+          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Có lỗi xảy ra khi tải số liệu thống kê')),

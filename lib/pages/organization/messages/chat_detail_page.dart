@@ -7,17 +7,16 @@ import './models/message_model.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
 
 class ChatDetailPage extends ConsumerStatefulWidget {
   final String organizationId;
   final String conversationId;
 
   const ChatDetailPage({
-    Key? key,
+    super.key,
     required this.organizationId,
     required this.conversationId,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<ChatDetailPage> createState() => _ChatDetailPageState();
@@ -166,12 +165,11 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         titleSpacing: 0,
         title: Row(
           children: [
-            AvatarWidget(
-              imgUrl: conversation.personAvatar,
+            AppAvatar(
+              imageUrl: conversation.personAvatar,
               fallbackText: conversation.personName,
-              width: 40,
-              height: 40,
-              borderRadius: 100,
+              size: 40,
+              shape: AvatarShape.circle,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -285,7 +283,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
               color: Colors.white,
               border: Border(
                 top: BorderSide(
-                  color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -369,7 +367,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                               fillColor: Theme.of(context)
                                   .colorScheme
                                   .surfaceContainerHighest
-                                  .withOpacity(0.3),
+                                  .withValues(alpha: 0.3),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide.none,
@@ -434,11 +432,10 @@ class _MessageBubble extends StatelessWidget {
   final bool isFirstInTurn;
 
   const _MessageBubble({
-    Key? key,
     required this.message,
     this.showAvatar = true,
     this.isFirstInTurn = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -462,12 +459,11 @@ class _MessageBubble extends StatelessWidget {
             children: [
               if (message.isFromMe) ...[
                 if (showAvatar)
-                  AvatarWidget(
-                    imgUrl: message.senderAvatar,
+                  AppAvatar(
+                    imageUrl: message.senderAvatar,
                     fallbackText: message.senderName,
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
+                    size: 44,
+                    shape: AvatarShape.circle,
                   ).animate().fadeIn(duration: 300.ms)
                 else
                   const SizedBox(width: 44),
@@ -698,7 +694,7 @@ class _MessageBubble extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.1),
+                                  color: Colors.red.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -717,12 +713,11 @@ class _MessageBubble extends StatelessWidget {
               if (!message.isFromMe) ...[
                 const SizedBox(width: 8),
                 if (showAvatar)
-                  AvatarWidget(
-                    imgUrl: message.senderAvatar,
+                  AppAvatar(
+                    imageUrl: message.senderAvatar,
                     fallbackText: message.senderName,
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
+                    size: 44,
+                    shape: AvatarShape.circle,
                   ).animate().fadeIn(duration: 300.ms)
                 else
                   const SizedBox(width: 44),

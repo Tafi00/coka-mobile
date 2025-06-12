@@ -16,6 +16,7 @@ import '../../../../../core/constants/app_constants.dart';
 import '../../../../../api/repositories/report_repository.dart';
 import '../../../../../core/utils/helpers.dart';
 import 'widgets/import_contact_bottomsheet.dart';
+import 'package:collection/collection.dart';
 
 class CustomersPage extends StatefulWidget {
   final String organizationId;
@@ -43,6 +44,10 @@ class _CustomersPageState extends State<CustomersPage>
   bool _showClearButton = false;
   String? _searchQuery;
   FilterResult? _currentFilter;
+  bool _isFetchingCounts = false;
+  Timer? _countsDebounce;
+  late final _mapEquality = const MapEquality<String, dynamic>();
+  Map<String, dynamic>? _lastQueryParams;
 
   static const Map<String, ({String name, Color badgeColor})> _tabConfig = {
     'all': (name: 'Tất cả', badgeColor: Color(0xFF5C33F0)),
@@ -71,6 +76,16 @@ class _CustomersPageState extends State<CustomersPage>
     _workspaceRepository = WorkspaceRepository(ApiClient());
     _reportRepository = ReportRepository(ApiClient());
     _tabController = TabController(length: _tabConfig.length, vsync: this);
+    
+    // Thêm listener cho tabController để tránh refresh không cần thiết khi tab đang chuyển
+    _tabController.addListener(() {
+      // Chỉ xử lý khi tab thực sự thay đổi (animation đã hoàn thành)
+      if (!_tabController.indexIsChanging) {
+        // Khi tab đã chuyển hoàn toàn, gọi _fetchCustomerCounts nếu cần
+        _fetchCustomerCounts();
+      }
+    });
+    
     _fetchCurrentWorkspace();
     _fetchCustomerCounts();
     _searchController.addListener(_handleSearchChange);
@@ -87,6 +102,7 @@ class _CustomersPageState extends State<CustomersPage>
     _searchController.removeListener(_handleSearchChange);
     _searchController.dispose();
     _debounce?.cancel();
+    _countsDebounce?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -395,90 +411,120 @@ class _CustomersPageState extends State<CustomersPage>
   }
 
   Future<void> _fetchCustomerCounts() async {
-    try {
-      final Map<String, dynamic> params = {
-        'workspaceId': widget.workspaceId,
-        'limit': 9999,
-      };
+    // Hủy bỏ debounce hiện tại nếu có
+    _countsDebounce?.cancel();
+    
+    // Nếu đang lấy dữ liệu, đặt lịch lấy sau 500ms
+    if (_isFetchingCounts) {
+      _countsDebounce = Timer(const Duration(milliseconds: 500), _fetchCustomerCounts);
+      return;
+    }
+    
+    // Tạo params
+    final Map<String, dynamic> params = {
+      'workspaceId': widget.workspaceId,
+      'limit': 9999,
+    };
 
-      if (_currentFilter != null) {
-        if (_currentFilter!.dateRange != null) {
-          params['startDate'] =
-              _currentFilter!.dateRange!.start.toIso8601String();
-          params['endDate'] = _currentFilter!.dateRange!.end.toIso8601String();
-        }
+    if (_currentFilter != null) {
+      if (_currentFilter!.dateRange != null) {
+        params['startDate'] =
+            _currentFilter!.dateRange!.start.toIso8601String();
+        params['endDate'] = _currentFilter!.dateRange!.end.toIso8601String();
+      }
 
-        if (_currentFilter!.categories.isNotEmpty) {
-          _currentFilter!.categories.asMap().forEach((index, category) {
-            params['categoryList[$index]'] = category.id;
-          });
-        }
+      if (_currentFilter!.categories.isNotEmpty) {
+        _currentFilter!.categories.asMap().forEach((index, category) {
+          params['categoryList[$index]'] = category.id;
+        });
+      }
 
-        if (_currentFilter!.sources.isNotEmpty) {
-          _currentFilter!.sources.asMap().forEach((index, source) {
-            params['sourceList[$index]'] = source.name;
-          });
-        }
+      if (_currentFilter!.sources.isNotEmpty) {
+        _currentFilter!.sources.asMap().forEach((index, source) {
+          params['sourceList[$index]'] = source.name;
+        });
+      }
 
-        if (_currentFilter!.ratings.isNotEmpty) {
-          params['rating'] = _currentFilter!.ratings.first.id;
-        }
+      if (_currentFilter!.ratings.isNotEmpty) {
+        params['rating'] = _currentFilter!.ratings.first.id;
+      }
 
-        if (_currentFilter!.tags.isNotEmpty) {
-          _currentFilter!.tags.asMap().forEach((index, tag) {
-            params['tags[$index]'] = tag.name;
-          });
-        }
+      if (_currentFilter!.tags.isNotEmpty) {
+        _currentFilter!.tags.asMap().forEach((index, tag) {
+          params['tags[$index]'] = tag.name;
+        });
+      }
 
-        if (_currentFilter!.assignees.isNotEmpty) {
-          int assignToIndex = 0;
-          int teamIdIndex = 0;
+      if (_currentFilter!.assignees.isNotEmpty) {
+        int assignToIndex = 0;
+        int teamIdIndex = 0;
 
-          for (var assignee in _currentFilter!.assignees) {
-            if (assignee.isTeam) {
-              params['teamId[$teamIdIndex]'] = assignee.id;
-              teamIdIndex++;
-            } else {
-              params['assignTo[$assignToIndex]'] = assignee.id;
-              assignToIndex++;
-            }
+        for (var assignee in _currentFilter!.assignees) {
+          if (assignee.isTeam) {
+            params['teamId[$teamIdIndex]'] = assignee.id;
+            teamIdIndex++;
+          } else {
+            params['assignTo[$assignToIndex]'] = assignee.id;
+            assignToIndex++;
           }
         }
       }
+    }
 
-      if (_searchQuery?.isNotEmpty ?? false) {
-        params['searchText'] = _searchQuery;
-      }
-
-      print(
-          "Fetching customer counts with params: ${params.toQueryParameters()}");
-
+    if (_searchQuery?.isNotEmpty ?? false) {
+      params['searchText'] = _searchQuery;
+    }
+    
+    // So sánh với các tham số cuối cùng, nếu giống nhau thì không gọi lại API
+    if (_lastQueryParams != null && 
+        _mapEquals(_lastQueryParams, params)) {
+      return;
+    }
+    
+    _isFetchingCounts = true;
+    try {
       final response = await _reportRepository.getStatisticsByStageGroup(
         widget.organizationId,
         widget.workspaceId,
         queryParameters: params.toQueryParameters(),
       );
+      
+      // Lưu lại tham số cuối cùng
+      _lastQueryParams = Map<String, dynamic>.from(params);
 
-      setState(() {
-        int total = 0;
-        final List<dynamic> groups = response['content'];
-        for (var group in groups) {
-          final String groupName = group['groupName'];
-          final int count = group['count'];
-          _customerCounts[groupName] = count;
-          total += count;
-        }
-        _customerCounts['Tất cả'] = total;
-      });
+      if (mounted) {
+        setState(() {
+          int total = 0;
+          final List<dynamic> groups = response['content'];
+          for (var group in groups) {
+            final String groupName = group['groupName'];
+            final int count = group['count'];
+            _customerCounts[groupName] = count;
+            total += count;
+          }
+          _customerCounts['Tất cả'] = total;
+          _isFetchingCounts = false;
+        });
+      }
     } catch (e) {
       print(e);
       if (mounted) {
+        setState(() {
+          _isFetchingCounts = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Có lỗi xảy ra khi tải số liệu thống kê')),
         );
       }
     }
+  }
+
+  bool _mapEquals(Map<String, dynamic>? map1, Map<String, dynamic>? map2) {
+    if (map1 == null || map2 == null) return map1 == map2;
+    if (map1.length != map2.length) return false;
+    
+    return _mapEquality.equals(map1, map2);
   }
 
   @override
@@ -488,7 +534,7 @@ class _CustomersPageState extends State<CustomersPage>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/organization/${widget.organizationId}'),
           ),
           centerTitle: true,
           title: _buildTitle(),
@@ -565,7 +611,11 @@ class _CustomersPageState extends State<CustomersPage>
                 Icons.description,
                 color: Colors.black,
               ),
-              onTap: () async {},
+              onTap: () {
+                context.push(
+                  '/organization/${widget.organizationId}/workspace/${widget.workspaceId}/customers/import-googlesheet',
+                );
+              },
             ),
             SpeedDialChild(
               backgroundColor: const Color(0xFFE3DFFF),

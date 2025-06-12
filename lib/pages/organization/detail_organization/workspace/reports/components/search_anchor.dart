@@ -10,14 +10,14 @@ class CustomSearchAnchor extends StatefulWidget {
       suggestionsBuilder;
 
   const CustomSearchAnchor({
-    Key? key,
+    super.key,
     required this.builder,
     required this.searchController,
     required this.onTextChanged,
     required this.isFullScreen,
     required this.viewConstraints,
     required this.suggestionsBuilder,
-  }) : super(key: key);
+  });
 
   @override
   State<CustomSearchAnchor> createState() => _CustomSearchAnchorState();
@@ -192,10 +192,10 @@ class Badge extends StatelessWidget {
   final bool isLabelVisible;
 
   const Badge({
-    Key? key,
+    super.key,
     required this.child,
     this.isLabelVisible = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
