@@ -6,6 +6,7 @@ import 'package:coka/api/repositories/auth_repository.dart';
 import 'package:coka/api/api_client.dart';
 import 'package:coka/shared/widgets/custom_bottom_navigation.dart';
 import 'package:coka/api/repositories/organization_repository.dart';
+import 'package:coka/api/repositories/notification_repository.dart';
 import 'package:coka/shared/widgets/organization_drawer.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:coka/shared/widgets/notification_list_widget.dart';
@@ -31,6 +32,7 @@ class _OrganizationPageState extends State<OrganizationPage> {
   List<dynamic> _organizations = [];
   bool _isLoading = true;
   bool _isLoadingOrganizationsError = false;
+  int _unreadNotificationCount = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -54,6 +56,7 @@ class _OrganizationPageState extends State<OrganizationPage> {
     await Future.wait([
       _loadUserInfo(),
       _loadOrganizations(),
+      _loadUnreadNotificationCount(),
     ]);
   }
 
@@ -171,6 +174,21 @@ class _OrganizationPageState extends State<OrganizationPage> {
           const SnackBar(content: Text('Không thể tải thông tin người dùng')),
         );
       }
+    }
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      final notificationRepository = NotificationRepository(ApiClient());
+      final response = await notificationRepository.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadNotificationCount = response['content'] ?? 0;
+        });
+      }
+    } catch (e) {
+      print('Lỗi khi load số lượng thông báo chưa đọc: $e');
+      // Không hiển thị lỗi cho user vì đây không phải chức năng quan trọng
     }
   }
 
@@ -339,7 +357,10 @@ class _OrganizationPageState extends State<OrganizationPage> {
           return notificationWidget;
         },
       ),
-    );
+    ).then((_) {
+      // Reload unread count khi đóng notification modal
+      _loadUnreadNotificationCount();
+    });
   }
 
   @override
@@ -354,12 +375,46 @@ class _OrganizationPageState extends State<OrganizationPage> {
         leading: _buildAvatar(),
         title: _buildTitle(context),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: _navigateToNotifications,
-            style: const ButtonStyle(
-              tapTargetSize:
-                  MaterialTapTargetSize.shrinkWrap,
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: _navigateToNotifications,
+                  style: const ButtonStyle(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+                if (_unreadNotificationCount > 0)
+                  Positioned(
+                    right: -3,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      child: Text(
+                        _unreadNotificationCount > 99 ? '99+' : _unreadNotificationCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          height: 1,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 8),

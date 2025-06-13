@@ -770,7 +770,7 @@ class _AssignToBottomSheetState extends ConsumerState<AssignToBottomSheet>
         ),
         if (_selectedMembers.isNotEmpty)
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(top: BorderSide(color: Colors.grey[200]!)),
@@ -1022,146 +1022,153 @@ class _AssignToBottomSheetState extends ConsumerState<AssignToBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.viewInsets.bottom;
+    
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       child: Container(
+        height: mediaQuery.size.height * 0.8,
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey[200]!, width: 1),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Chuyển phụ trách',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2329),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      Navigator.of(context).pop();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        size: 20,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ],
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(color: Colors.grey[200]!, width: 1),
               ),
             ),
-            
-            // Main tabs
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey[100]!, width: 1),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Chuyển phụ trách',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2329),
+                  ),
                 ),
-              ),
-              child: TabBar(
-                controller: _mainTabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: const Color(0xFF667085),
-              indicatorColor: AppColors.primary,
-                indicatorWeight: 2,
-                labelStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                GestureDetector(
+                  onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 20,
+                      color: Colors.grey[600],
+                    ),
+                  ),
                 ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              tabs: const [
-                Tab(text: 'Thành viên'),
-                Tab(text: 'Đội sale'),
               ],
             ),
-            ),
-            
-            Expanded(
-              child: TabBarView(
-                controller: _mainTabController,
-                children: [
-                  // Members tab with sub-tabs
-                  Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      // Sub-tab buttons
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            _buildCustomTabButton(
-                              active: _memberSubTabController.index == 0,
-                              onTap: () {
-                                _memberSubTabController.animateTo(0);
-                                setState(() {});
-                              },
-                              text: 'Tổ chức',
-                            ),
-                            const SizedBox(width: 8),
-                            _buildCustomTabButton(
-                              active: _memberSubTabController.index == 1,
-                              onTap: () {
-                                _memberSubTabController.animateTo(1);
-                                if (_salesMembers.isEmpty) {
-                                  _loadSalesMembers();
-                                }
-                                setState(() {});
-                              },
-                              text: 'Đội sale',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Search bar
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildCompactSearchBar(),
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: TabBarView(
-                          controller: _memberSubTabController,
-                          children: [
-                            _buildOrgMembersList(),
-                            _buildSalesMembersList(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Teams tab
-                  _buildTeamsList(),
-                ],
+          ),
+          
+          // Main tabs
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(color: Colors.grey[100]!, width: 1),
               ),
             ),
-          ],
+            child: TabBar(
+              controller: _mainTabController,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: const Color(0xFF667085),
+            indicatorColor: AppColors.primary,
+              indicatorWeight: 2,
+              labelStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            tabs: const [
+              Tab(text: 'Thành viên'),
+              Tab(text: 'Đội sale'),
+            ],
+          ),
+          ),
+          
+          Expanded(
+            child: TabBarView(
+              controller: _mainTabController,
+              children: [
+                // Members tab with sub-tabs
+                Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    // Sub-tab buttons
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          _buildCustomTabButton(
+                            active: _memberSubTabController.index == 0,
+                            onTap: () {
+                              _memberSubTabController.animateTo(0);
+                              setState(() {});
+                            },
+                            text: 'Tổ chức',
+                          ),
+                          const SizedBox(width: 8),
+                          _buildCustomTabButton(
+                            active: _memberSubTabController.index == 1,
+                            onTap: () {
+                              _memberSubTabController.animateTo(1);
+                              if (_salesMembers.isEmpty) {
+                                _loadSalesMembers();
+                              }
+                              setState(() {});
+                            },
+                            text: 'Đội sale',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Search bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildCompactSearchBar(),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _memberSubTabController,
+                        children: [
+                          _buildOrgMembersList(),
+                          _buildSalesMembersList(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Teams tab
+                _buildTeamsList(),
+              ],
+            ),
+          ),
+          
+          // Bottom padding để tránh bị keyboard che
+          if (bottomPadding > 0) SizedBox(height: bottomPadding),
+        ],
         ),
       ),
     );

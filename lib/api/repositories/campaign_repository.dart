@@ -101,4 +101,34 @@ class CampaignRepository {
     );
     return response.data;
   }
+
+  Future<Map<String, dynamic>> getCampaignsPaging(
+    String organizationId, {
+    int? page,
+    int? size,
+    String? search,
+    Map<String, String>? additionalParams,
+  }) async {
+    Map<String, dynamic> queryParams = {};
+    
+    if (page != null) queryParams['page'] = page;
+    if (size != null) queryParams['size'] = size;
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (additionalParams != null) queryParams.addAll(additionalParams);
+
+    final response = await _apiClient.dio.get(
+      '/api/v1/campaign/getlistpaging',
+      options: Options(
+        headers: {
+          'Accept-Language': 'vi-VN,vi;q=0.9,en-VN;q=0.8,en;q=0.7,fr-FR;q=0.6,fr;q=0.5,en-US;q=0.4',
+          'Connection': 'keep-alive',
+          'Content-Type': 'application/json',
+          'accept': '*/*',
+          'organizationId': organizationId,
+        },
+      ),
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+    return response.data;
+  }
 } 

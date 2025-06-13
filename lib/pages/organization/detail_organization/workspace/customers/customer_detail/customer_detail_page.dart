@@ -147,6 +147,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        backgroundColor: Colors.transparent,
         builder: (context) => AssignToBottomSheet(
           organizationId: widget.organizationId,
           workspaceId: widget.workspaceId,
@@ -418,6 +419,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                       showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
                         builder: (context) => AssignToBottomSheet(
                           organizationId: widget.organizationId,
                           workspaceId: widget.workspaceId,

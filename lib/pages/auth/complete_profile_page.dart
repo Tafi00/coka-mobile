@@ -28,6 +28,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   bool _isLoading = false;
   final _authRepository = AuthRepository(ApiClient());
   File? _selectedAvatar;
+  String? _currentAvatarUrl;
 
   @override
   void initState() {
@@ -49,6 +50,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
             _birthdayController.text = "${dob.day}/${dob.month}/${dob.year}";
           }
           _workplaceController.text = metadata['address'] ?? '';
+          
+          // Cập nhật avatar hiện tại
+          _currentAvatarUrl = metadata['avatar'];
           
           // Cập nhật giới tính
           if (metadata['gender'] != null) {
@@ -107,6 +111,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           message: 'Thông tin của bạn đã được cập nhật thành công.',
           confirmText: 'Đóng',
           icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+          showCancelButton: false,
           onConfirm: () {
             Navigator.of(context).pop(); // Quay lại trang trước đó
           },
@@ -207,11 +213,33 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                                     fit: BoxFit.cover,
                                   ),
                                 )
-                              : const Icon(
-                                  Icons.person_outline,
-                                  size: 40,
-                                  color: AppColors.text,
-                                ),
+                              : _currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty
+                                  ? ClipOval(
+                                      child: Image.network(
+                                        _currentAvatarUrl!,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(
+                                            Icons.person_outline,
+                                            size: 40,
+                                            color: AppColors.text,
+                                          );
+                                        },
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return const CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person_outline,
+                                      size: 40,
+                                      color: AppColors.text,
+                                    ),
                         ),
                         Positioned(
                           right: 0,

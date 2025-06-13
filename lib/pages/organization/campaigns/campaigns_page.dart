@@ -3,78 +3,12 @@ import 'package:coka/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:coka/api/repositories/auth_repository.dart';
 import 'package:coka/api/api_client.dart';
+import 'package:coka/models/campaign.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coka/providers/organization_provider.dart';
-import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:coka/providers/campaign_provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:go_router/go_router.dart';
-
-class Campaign {
-  final String id;
-  final String organizationId;
-  final String title;
-  final String? packageUsageId;
-  final String? telephoneNumber;
-  final int retryCountOnFailure;
-  final int failureRetryDelay;
-  final bool isAllowCallsOutside;
-  final bool isAutoUpdateStage;
-  final bool isAllowManualDialing;
-  final bool isAutoEndIfNoAnswer;
-  final String? content;
-  final int status;
-  final String createdBy;
-  final DateTime createdDate;
-  final String lastModifiedBy;
-  final DateTime lastModifiedDate;
-
-  Campaign({
-    required this.id,
-    required this.organizationId,
-    required this.title,
-    this.packageUsageId,
-    this.telephoneNumber,
-    required this.retryCountOnFailure,
-    required this.failureRetryDelay,
-    required this.isAllowCallsOutside,
-    required this.isAutoUpdateStage,
-    required this.isAllowManualDialing,
-    required this.isAutoEndIfNoAnswer,
-    this.content,
-    required this.status,
-    required this.createdBy,
-    required this.createdDate,
-    required this.lastModifiedBy,
-    required this.lastModifiedDate,
-  });
-
-  factory Campaign.fromJson(Map<String, dynamic> json) {
-    return Campaign(
-      id: json['id'] ?? '',
-      organizationId: json['organizationId'] ?? '',
-      title: json['title'] ?? '',
-      packageUsageId: json['packageUsageId'],
-      telephoneNumber: json['telephoneNumber'],
-      retryCountOnFailure: json['retryCountOnFailure'] ?? 0,
-      failureRetryDelay: json['failureRetryDelay'] ?? 0,
-      isAllowCallsOutside: json['isAllowCallsOutside'] ?? false,
-      isAutoUpdateStage: json['isAutoUpdateStage'] ?? false,
-      isAllowManualDialing: json['isAllowManualDialing'] ?? false,
-      isAutoEndIfNoAnswer: json['isAutoEndIfNoAnswer'] ?? false,
-      content: json['content'],
-      status: json['status'] ?? 0,
-      createdBy: json['createdBy'] ?? '',
-      createdDate: json['createdDate'] != null 
-          ? DateTime.parse(json['createdDate']) 
-          : DateTime.now(),
-      lastModifiedBy: json['lastModifiedBy'] ?? '',
-      lastModifiedDate: json['lastModifiedDate'] != null 
-          ? DateTime.parse(json['lastModifiedDate']) 
-          : DateTime.now(),
-    );
-  }
-}
 
 class CampaignsPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -91,7 +25,6 @@ class CampaignsPage extends ConsumerStatefulWidget {
 class _CampaignsPageState extends ConsumerState<CampaignsPage> {
   bool _isLoading = true;
   Map<String, dynamic>? _userInfo;
-  List<Campaign> _campaigns = [];
   String _errorMessage = '';
 
   @override
@@ -130,50 +63,9 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
 
   Future<void> _loadCampaigns() async {
     try {
-      // Lấy token từ secure storage
-      const storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'access_token');
-      
-      if (token == null) {
-        setState(() {
-          _errorMessage = 'Không tìm thấy token xác thực';
-        });
-        return;
-      }
-      
-      final dio = Dio();
-      final response = await dio.get(
-        'https://callcenter.coka.ai/api/v1/campaign/getlistpaging?',
-        options: Options(
-          headers: {
-            'Accept-Language': 'vi-VN,vi;q=0.9,en-VN;q=0.8,en;q=0.7,fr-FR;q=0.6,fr;q=0.5,en-US;q=0.4',
-            'Authorization': 'Bearer $token',
-            'Connection': 'keep-alive',
-            'Content-Type': 'application/json',
-            'accept': '*/*',
-            'organizationId': widget.organizationId,
-          },
-        ),
+      await ref.read(campaignsProvider.notifier).loadCampaignsPaging(
+        widget.organizationId,
       );
-
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data['code'] == 0 && data['content'] != null) {
-          setState(() {
-            _campaigns = (data['content'] as List)
-                .map((item) => Campaign.fromJson(item))
-                .toList();
-          });
-        } else {
-          setState(() {
-            _errorMessage = data['message'] ?? 'Lỗi không xác định';
-          });
-        }
-      } else {
-        setState(() {
-          _errorMessage = 'Lỗi kết nối: ${response.statusCode}';
-        });
-      }
     } catch (e) {
       setState(() {
         _errorMessage = 'Lỗi khi tải danh sách chiến dịch: $e';
@@ -224,6 +116,7 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
     final organizationState = ref.watch(currentOrganizationProvider);
     final isAdminOrOwner = ref.watch(isAdminOrOwnerProvider);
     final userRole = ref.watch(userRoleProvider);
+    final campaignsState = ref.watch(campaignsProvider);
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -245,7 +138,7 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
             ),
       body: _isLoading || organizationState is AsyncLoading
           ? _buildLoadingSkeleton()
-          : _buildBody(isAdminOrOwner, userRole),
+          : _buildBody(isAdminOrOwner, userRole, campaignsState),
     );
   }
   
@@ -295,11 +188,11 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
     );
   }
 
-  Widget _buildBody(bool isAdminOrOwner, String userRole) {
+  Widget _buildBody(bool isAdminOrOwner, String userRole, AsyncValue<List<Campaign>> campaignsState) {
     if (isAdminOrOwner) {
       return _buildAdminView(userRole);
     } else {
-      return _buildMemberView(userRole);
+      return _buildMemberView(userRole, campaignsState);
     }
   }
 
@@ -327,12 +220,16 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
       {
         'title': 'Làm giàu dữ liệu',
         'icon': '${AppConstants.imagePath}/campaign_icon_2.png',
-        'onTap': () {/* Xử lý khi chọn tính năng */},
+        'onTap': () {
+          context.push('/organization/${widget.organizationId}/campaigns/fill-data');
+        },
       },
       {
         'title': 'Automation',
         'icon': '${AppConstants.imagePath}/campaign_icon_3.png',
-        'onTap': () {/* Xử lý khi chọn tính năng */},
+        'onTap': () {
+          context.push('/organization/${widget.organizationId}/campaigns/automation');
+        },
       },
       {
         'title': 'Tổng đài',
@@ -405,9 +302,22 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
     );
   }
 
-  Widget _buildMemberView(String userRole) {
-    if (_errorMessage.isNotEmpty) {
-      return Center(
+  Widget _buildMemberView(String userRole, AsyncValue<List<Campaign>> campaignsState) {
+    return campaignsState.when(
+      loading: () => Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            'Đang tải danh sách chiến dịch...',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      ),
+      error: (error, stackTrace) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -428,7 +338,7 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                _errorMessage,
+                error.toString(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
               ),
@@ -440,113 +350,114 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
             ),
           ],
         ),
-      );
-    }
-
-    if (_campaigns.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            'Bạn không có chiến dịch nào được phân công',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-      child: ListView.builder(
-        itemCount: _campaigns.length,
-        itemBuilder: (context, index) {
-          final campaign = _campaigns[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            elevation: 0,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey[200]!, width: 1),
-            ),
+      ),
+      data: (campaigns) {
+        if (campaigns.isEmpty) {
+          return Center(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Hàng 1: Icon, tiêu đề và nút gọi
-                  Row(
-                    children: [
-                      Image.asset(
-                        '${AppConstants.imagePath}/call_campaign_icon.png',
-                        width: 28,
-                        height: 28,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          campaign.title,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Xử lý khi nhấn nút gọi ngay
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary, // Màu tím đậm (Deep Purple)
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          minimumSize: const Size(70, 30), // Giảm kích thước tối thiểu
-                          textStyle: const TextStyle(fontSize: 13),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.phone_outlined, size: 14),
-                            SizedBox(width: 4),
-                            Text('Gọi ngay'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  // Hàng 2: Icon sim và số sim
-                  Row(
-                    children: [
-                      Image.asset(
-                        '${AppConstants.imagePath}/sim_card_icon.png',
-                        width: 16,
-                        height: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        campaign.telephoneNumber != null ? 'Đầu số ${campaign.telephoneNumber}' : 'Mặc định',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'Bạn không có chiến dịch nào được phân công',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
               ),
             ),
           );
-        },
-      ),
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          child: ListView.builder(
+            itemCount: campaigns.length,
+            itemBuilder: (context, index) {
+              final campaign = campaigns[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                elevation: 0,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey[200]!, width: 1),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Hàng 1: Icon, tiêu đề và nút gọi
+                      Row(
+                        children: [
+                          Image.asset(
+                            '${AppConstants.imagePath}/call_campaign_icon.png',
+                            width: 28,
+                            height: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              campaign.title,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Xử lý khi nhấn nút gọi ngay
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary, // Màu tím đậm (Deep Purple)
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: const Size(70, 30), // Giảm kích thước tối thiểu
+                              textStyle: const TextStyle(fontSize: 13),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.phone_outlined, size: 14),
+                                SizedBox(width: 4),
+                                Text('Gọi ngay'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      // Hàng 2: Icon sim và số sim
+                      Row(
+                        children: [
+                          Image.asset(
+                            '${AppConstants.imagePath}/sim_card_icon.png',
+                            width: 16,
+                            height: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            campaign.telephoneNumber != null ? 'Đầu số ${campaign.telephoneNumber}' : 'Mặc định',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 

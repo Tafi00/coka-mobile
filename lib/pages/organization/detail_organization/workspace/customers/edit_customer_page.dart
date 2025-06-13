@@ -14,6 +14,7 @@ import '../../../../../shared/widgets/radio_gender.dart';
 import '../../../../../shared/widgets/border_textfield.dart';
 import '../../../../../shared/widgets/awesome_textfield.dart';
 import '../../../../../shared/widgets/avatar_widget.dart';
+import '../../../../../core/utils/helpers.dart';
 
 const customerSourceList = [
   "Khách cũ",
@@ -78,6 +79,7 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
   int? _gender;
   final _picker = ImagePicker();
   XFile? _pickedImage;
+  String? _avatarCacheKey; // Thêm cache key cho avatar
 
   @override
   void initState() {
@@ -292,6 +294,14 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
 
       if (!mounted) return;
 
+      // Xóa cache avatar cũ và cập nhật cache key nếu có avatar mới
+      if (_pickedImage != null) {
+        await Helpers.clearImageCache(widget.customerData['avatar']);
+        setState(() {
+          _avatarCacheKey = DateTime.now().millisecondsSinceEpoch.toString();
+        });
+      }
+
       // Navigate back
       context.pop();
 
@@ -355,6 +365,7 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
                                 fallbackText: widget.customerData['name'] ?? _nameController.text,
                                 imageUrl: widget.customerData['avatar'],
                                 size: 90,
+                                cacheKey: _avatarCacheKey,
                               ),
                       ),
                       if (_pickedImage == null && widget.customerData['avatar'] == null)

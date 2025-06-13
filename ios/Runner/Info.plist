@@ -46,26 +46,63 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 
-	<!-- Facebook -->
 	<key>CFBundleURLTypes</key>
 	<array>
-	<dict>
-		<key>CFBundleURLSchemes</key>
-		<array>
-		<string>fb{your-app-id}</string>
-		</array>
-	</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb1903610109953807</string>
+				<string>com.googleusercontent.apps.882931293778-um3bi17983j6k973mnrjd5gagj7u4h9f</string>
+			</array>
+		</dict>
 	</array>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<false/>
 	<key>FacebookAppID</key>
-	<string>1751811208512576</string>
+	<string>1903610109953807</string>
+	<key>FacebookAutoLogAppEventsEnabled</key>
+	<string>TRUE</string>
 	<key>FacebookClientToken</key>
-	<string>4afe7155afcde011172f340625206fcc</string>
+	<string>397fdac0529dd1155f785f1889de4d39</string>
 	<key>FacebookDisplayName</key>
-	<string>CoKa</string>
+	<string>Coka</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-	<string>fbapi</string>
-	<string>fb-messenger-share-api</string>
+		<string>itms-beta</string>
+		<string>itms</string>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Need camera access for video call functions</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Coka cần quyền truy cập vào danh bạ của bạn để tạo khách hàng.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Coka cần quyền truy cập vào micro để thực hiện cuộc gọi</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Coka cần quyền truy cập vào thư viện ảnh của bạn để đặt làm ảnh đại diện</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+		<string>voip</string>
+	</array>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	</array>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>This permission is not needed by the app, but it is required by an underlying API. If you see this dialog, contact us.</string>
 </dict>
 </plist>

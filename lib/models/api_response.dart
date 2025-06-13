@@ -1,13 +1,30 @@
-class ApiResponse {
+class ApiResponse<T> {
   final bool isSuccess;
-  final dynamic data;
+  final T? data;
   final String message;
 
   ApiResponse({
     required this.isSuccess,
-    required this.data,
+    this.data,
     required this.message,
   });
+
+  // Factory constructors cho success và error
+  factory ApiResponse.success(T data) {
+    return ApiResponse(
+      isSuccess: true,
+      data: data,
+      message: '',
+    );
+  }
+
+  factory ApiResponse.error(String message) {
+    return ApiResponse(
+      isSuccess: false,
+      data: null,
+      message: message,
+    );
+  }
 }
 
 class HiddenStagesResponse {

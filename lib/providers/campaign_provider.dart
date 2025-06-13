@@ -76,6 +76,42 @@ class CampaignsNotifier extends StateNotifier<AsyncValue<List<Campaign>>> {
     }
   }
 
+  Future<void> loadCampaignsPaging(
+    String organizationId, {
+    int? page,
+    int? size,
+    String? search,
+    Map<String, String>? additionalParams,
+  }) async {
+    try {
+      state = const AsyncValue.loading();
+      
+      final response = await _campaignRepository.getCampaignsPaging(
+        organizationId,
+        page: page,
+        size: size,
+        search: search,
+        additionalParams: additionalParams,
+      );
+
+      if (response['code'] == 0) {
+        final campaignsData = response['content'] as List<dynamic>;
+        final campaigns = campaignsData
+            .map((data) => Campaign.fromJson(data as Map<String, dynamic>))
+            .toList();
+
+        state = AsyncValue.data(campaigns);
+      } else {
+        state = AsyncValue.error(
+          response['message'] ?? 'Unknown error',
+          StackTrace.current,
+        );
+      }
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
   Future<Campaign?> createCampaign(
     String organizationId,
     Map<String, dynamic> campaignData,

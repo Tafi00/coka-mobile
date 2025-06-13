@@ -2,5 +2,5 @@
   "java.dependency.syncWithFolderExplorer": true,
   "java.project.explorer.showNonJavaResources": true,
   "java.dependency.packagePresentation": "flat",
-  "dart.flutterSdkPath": ".fvm/versions/3.32.0"
+  "dart.flutterSdkPath": ".fvm/versions/stable"
 }

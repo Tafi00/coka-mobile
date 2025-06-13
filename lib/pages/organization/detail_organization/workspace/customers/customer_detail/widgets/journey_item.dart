@@ -215,170 +215,173 @@ class JourneyItem extends StatelessWidget {
     final avatar = dataItem["createdBy"]["avatar"];
     final iconPath = getIconPath(type?.toUpperCase(), isSource);
 
-    return Stack(
-      children: [
-        if (!isLast)
-          Positioned(
-            left: 20,
-            top: 40,
-            bottom: 0,
-            child: Container(
-              width: 1,
-              color: const Color(0x66000000),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Stack(
+        children: [
+          if (!isLast)
+            Positioned(
+              left: 20,
+              top: 40,
+              bottom: 0,
+              child: Container(
+                width: 1,
+                color: const Color(0x66000000),
+              ),
             ),
-          ),
-        Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Column(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: const Color(0xFFE3DFFF),
-                      radius: 20,
-                      child: Image.asset(iconPath, width: 24, height: 24),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 50),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 2),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF1F2329),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Tooltip(
-                                  message: fullTime,
-                                  triggerMode: TooltipTriggerMode.tap,
-                                  waitDuration: const Duration(seconds: 2),
-                                  child: Text(
-                                    snipTime,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (subTitle.isNotEmpty)
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: Html(
-                                        data: "<p>$subTitle</p>",
-                                        onLinkTap:
-                                            (url, attributes, element) async {
-                                          if (url != null &&
-                                              url.contains("http")) {
-                                            if (!await launchUrl(
-                                                Uri.parse(url))) {
-                                              throw Exception(
-                                                  'Could not launch $url');
-                                            }
-                                          }
-                                        },
-                                        extensions: const [
-                                          AudioHtmlExtension(),
-                                        ],
-                                        style: {
-                                          "body": Style(margin: Margins.zero),
-                                          ".column": Style(
-                                            display: Display.block,
-                                            backgroundColor: Colors.transparent,
-                                          ),
-                                          "a": Style(
-                                            textDecoration: TextDecoration.none,
-                                            color: const Color(0xFF554FE8),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          "p": Style(
-                                            padding: HtmlPaddings.zero,
-                                            margin:
-                                                Margins.symmetric(vertical: 2),
-                                          ),
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                if (type == "UPDATE_RATING")
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8.0),
-                                    child: RatingBar.builder(
-                                      initialRating:
-                                          double.parse(newValue ?? "0"),
-                                      itemBuilder: (context, _) => const Icon(
-                                        Icons.star,
-                                        color: Color(0xFFF27B21),
-                                      ),
-                                      itemSize: 20,
-                                      onRatingUpdate: (value) {},
-                                      ignoreGestures: true,
-                                    ),
-                                  ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Spacer(),
-                                    Text(
-                                      name,
+          Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Column(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: const Color(0xFFE3DFFF),
+                        radius: 20,
+                        child: Image.asset(iconPath, width: 24, height: 24),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 50),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 2),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      title,
                                       style: const TextStyle(
-                                        color: Colors.black54,
-                                        fontSize: 10,
+                                        fontSize: 13,
+                                        color: Color(0xFF1F2329),
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(width: 5),
-                                    AppAvatar(
-                                      imageUrl: avatar,
-                                      fallbackText: name,
-                                      size: 18,
-                                      fallbackTextColor: Colors.black87,
-                                      fallbackBackgroundColor: Colors.grey[300],
+                                  ),
+                                  Tooltip(
+                                    message: fullTime,
+                                    triggerMode: TooltipTriggerMode.tap,
+                                    waitDuration: const Duration(seconds: 2),
+                                    child: Text(
+                                      snipTime,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black,
+                                      ),
                                     ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (subTitle.isNotEmpty)
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: Html(
+                                          data: "<p>$subTitle</p>",
+                                          onLinkTap:
+                                              (url, attributes, element) async {
+                                            if (url != null &&
+                                                url.contains("http")) {
+                                              if (!await launchUrl(
+                                                  Uri.parse(url))) {
+                                                throw Exception(
+                                                    'Could not launch $url');
+                                              }
+                                            }
+                                          },
+                                          extensions: const [
+                                            AudioHtmlExtension(),
+                                          ],
+                                          style: {
+                                            "body": Style(margin: Margins.zero),
+                                            ".column": Style(
+                                              display: Display.block,
+                                              backgroundColor: Colors.transparent,
+                                            ),
+                                            "a": Style(
+                                              textDecoration: TextDecoration.none,
+                                              color: const Color(0xFF554FE8),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            "p": Style(
+                                              padding: HtmlPaddings.zero,
+                                              margin:
+                                                  Margins.symmetric(vertical: 2),
+                                            ),
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  if (type == "UPDATE_RATING")
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8.0),
+                                      child: RatingBar.builder(
+                                        initialRating:
+                                            double.parse(newValue ?? "0"),
+                                        itemBuilder: (context, _) => const Icon(
+                                          Icons.star,
+                                          color: Color(0xFFF27B21),
+                                        ),
+                                        itemSize: 20,
+                                        onRatingUpdate: (value) {},
+                                        ignoreGestures: true,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      const Spacer(),
+                                      Text(
+                                        name,
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      AppAvatar(
+                                        imageUrl: avatar,
+                                        fallbackText: name,
+                                        size: 18,
+                                        fallbackTextColor: Colors.black87,
+                                        fallbackBackgroundColor: Colors.grey[300],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ],
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

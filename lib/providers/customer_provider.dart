@@ -325,7 +325,7 @@ class CustomerDetailNotifier
   Future<Map<String, dynamic>?> updateCustomer(
     String organizationId,
     String workspaceId,
-    dynamic formData,
+    FormData formData,
   ) async {
     try {
       final response = await _customerRepository.updateCustomer(
@@ -335,8 +335,8 @@ class CustomerDetailNotifier
         formData,
       );
       
-      // Kiểm tra mã trạng thái từ API
-      if (response['code'] != null && response['code'] != 200) {
+      // Kiểm tra mã trạng thái từ API - API trả về code 0 khi thành công
+      if (response['code'] != null && response['code'] != 0) {
         final errorMessage = response['message'] as String? ?? 'Đã xảy ra lỗi khi cập nhật khách hàng';
         throw errorMessage;
       }
@@ -471,8 +471,11 @@ class CustomerJourneyNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
     String note,
   ) async {
     try {
+      print('CustomerJourneyNotifier.updateJourney called with stageId: $stageId, note: $note');
+      
       // Nếu không có stageId, gọi createNote thay vì updateJourney
       if (stageId.isEmpty) {
+        print('Calling createNote because stageId is empty');
         await _customerRepository.createNote(
           organizationId,
           workspaceId,
@@ -480,6 +483,7 @@ class CustomerJourneyNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
           note,
         );
       } else {
+        print('Calling updateJourney with stageId: $stageId');
         await _customerRepository.updateJourney(
           organizationId,
           workspaceId,
@@ -489,6 +493,7 @@ class CustomerJourneyNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
         );
       }
       
+      print('API call successful, reloading journey list');
       state = await AsyncValue.guard(() async {
         final response = await _customerRepository.getJourneyList(
           organizationId,
@@ -497,10 +502,13 @@ class CustomerJourneyNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
         );
         _lastOrganizationId = organizationId;
         _lastWorkspaceId = workspaceId;
+        print('Journey list reloaded successfully');
         return response['content'] as List;
       });
     } catch (error, stackTrace) {
+      print('Error in updateJourney: $error');
       state = AsyncValue.error(error, stackTrace);
+      rethrow;
     }
   }
 }

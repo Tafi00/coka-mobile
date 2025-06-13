@@ -36,9 +36,7 @@ class CustomerMenu extends ConsumerWidget {
               () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                ),
+                backgroundColor: Colors.transparent,
                 builder: (context) => AssignToBottomSheet(
                   organizationId: organizationId,
                   workspaceId: workspaceId,

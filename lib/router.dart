@@ -12,6 +12,8 @@ import 'pages/organization/campaigns/multi_source_connection/multi_source_connec
 import 'pages/organization/campaigns/ai_chatbot/ai_chatbot_page.dart';
 import 'pages/organization/campaigns/ai_chatbot/create_chatbot_page.dart';
 import 'pages/organization/campaigns/ai_chatbot/edit_chatbot_page.dart';
+import 'pages/organization/campaigns/fill_data/fill_data_page.dart';
+import 'pages/organization/campaigns/automation/automation_page.dart';
 import 'pages/organization/detail_organization/workspace/detail_workspace_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/customers_page.dart';
 import 'pages/organization/detail_organization/workspace/teams/teams_page.dart';
@@ -55,6 +57,24 @@ final appRoutes = [
     builder: (context, state) {
       final organizationId = state.pathParameters['organizationId']!;
       return MultiSourceConnectionPage(organizationId: organizationId);
+    },
+  ),
+
+  // Fill Data route (độc lập, không dùng ShellRoute)
+  GoRoute(
+    path: '/organization/:organizationId/campaigns/fill-data',
+    builder: (context, state) {
+      final organizationId = state.pathParameters['organizationId']!;
+      return FillDataPage(organizationId: organizationId);
+    },
+  ),
+
+  // Automation route (độc lập, không dùng ShellRoute)
+  GoRoute(
+    path: '/organization/:organizationId/campaigns/automation',
+    builder: (context, state) {
+      final organizationId = state.pathParameters['organizationId']!;
+      return AutomationPage(organizationId: organizationId);
     },
   ),
 

@@ -1,42 +1,64 @@
 class Campaign {
   final String id;
-  final String name;
-  final String description;
   final String organizationId;
-  final String status;
-  final String? createdBy;
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final DateTime createdAt;
+  final String title;
+  final String? packageUsageId;
+  final String? telephoneNumber;
+  final int retryCountOnFailure;
+  final int failureRetryDelay;
+  final bool isAllowCallsOutside;
+  final bool isAutoUpdateStage;
+  final bool isAllowManualDialing;
+  final bool isAutoEndIfNoAnswer;
+  final String? content;
+  final int status;
+  final String createdBy;
+  final DateTime createdDate;
+  final String lastModifiedBy;
+  final DateTime lastModifiedDate;
 
   Campaign({
     required this.id,
-    required this.name,
-    required this.description,
     required this.organizationId,
+    required this.title,
+    this.packageUsageId,
+    this.telephoneNumber,
+    required this.retryCountOnFailure,
+    required this.failureRetryDelay,
+    required this.isAllowCallsOutside,
+    required this.isAutoUpdateStage,
+    required this.isAllowManualDialing,
+    required this.isAutoEndIfNoAnswer,
+    this.content,
     required this.status,
-    this.createdBy,
-    this.startDate,
-    this.endDate,
-    required this.createdAt,
+    required this.createdBy,
+    required this.createdDate,
+    required this.lastModifiedBy,
+    required this.lastModifiedDate,
   });
 
   factory Campaign.fromJson(Map<String, dynamic> json) {
     return Campaign(
       id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
       organizationId: json['organizationId'] ?? '',
-      status: json['status'] ?? 'DRAFT',
-      createdBy: json['createdBy'],
-      startDate: json['startDate'] != null 
-          ? DateTime.parse(json['startDate']) 
-          : null,
-      endDate: json['endDate'] != null 
-          ? DateTime.parse(json['endDate']) 
-          : null,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
+      title: json['title'] ?? '',
+      packageUsageId: json['packageUsageId'],
+      telephoneNumber: json['telephoneNumber'],
+      retryCountOnFailure: json['retryCountOnFailure'] ?? 0,
+      failureRetryDelay: json['failureRetryDelay'] ?? 0,
+      isAllowCallsOutside: json['isAllowCallsOutside'] ?? false,
+      isAutoUpdateStage: json['isAutoUpdateStage'] ?? false,
+      isAllowManualDialing: json['isAllowManualDialing'] ?? false,
+      isAutoEndIfNoAnswer: json['isAutoEndIfNoAnswer'] ?? false,
+      content: json['content'],
+      status: json['status'] ?? 0,
+      createdBy: json['createdBy'] ?? '',
+      createdDate: json['createdDate'] != null 
+          ? DateTime.parse(json['createdDate']) 
+          : DateTime.now(),
+      lastModifiedBy: json['lastModifiedBy'] ?? '',
+      lastModifiedDate: json['lastModifiedDate'] != null 
+          ? DateTime.parse(json['lastModifiedDate']) 
           : DateTime.now(),
     );
   }
@@ -44,14 +66,22 @@ class Campaign {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
-      'description': description,
       'organizationId': organizationId,
+      'title': title,
+      'packageUsageId': packageUsageId,
+      'telephoneNumber': telephoneNumber,
+      'retryCountOnFailure': retryCountOnFailure,
+      'failureRetryDelay': failureRetryDelay,
+      'isAllowCallsOutside': isAllowCallsOutside,
+      'isAutoUpdateStage': isAutoUpdateStage,
+      'isAllowManualDialing': isAllowManualDialing,
+      'isAutoEndIfNoAnswer': isAutoEndIfNoAnswer,
+      'content': content,
       'status': status,
       'createdBy': createdBy,
-      'startDate': startDate?.toIso8601String(),
-      'endDate': endDate?.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
+      'createdDate': createdDate.toIso8601String(),
+      'lastModifiedBy': lastModifiedBy,
+      'lastModifiedDate': lastModifiedDate.toIso8601String(),
     };
   }
 } 

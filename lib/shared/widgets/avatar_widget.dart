@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:coka/core/utils/helpers.dart';
 
 enum AvatarShape { circle, rectangle }
@@ -16,6 +17,7 @@ class AppAvatar extends StatelessWidget {
   final BoxFit fit;
   final Widget? errorWidget;
   final Widget? placeholder;
+  final String? cacheKey; // Thêm cache key để force refresh khi cần
 
   const AppAvatar({
     super.key,
@@ -30,6 +32,7 @@ class AppAvatar extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.errorWidget,
     this.placeholder,
+    this.cacheKey,
   });
 
   String _getDisplayText() {
@@ -106,16 +109,19 @@ class AppAvatar extends StatelessWidget {
     final effectivePlaceholder = placeholder ?? _buildShimmerPlaceholder(size, shape, borderRadius);
     final effectiveErrorWidget = errorWidget ?? _buildFallbackAvatar(context); // Use fallback as error widget by default
 
-    final imageWidget = Image.network(
-      Helpers.getAvatarUrl(imageUrl!), // Use helper if needed
+    // Thêm cache buster nếu có cacheKey
+    final avatarUrl = Helpers.getAvatarUrl(imageUrl!);
+    final finalUrl = cacheKey != null ? '$avatarUrl?v=$cacheKey' : avatarUrl;
+
+    final imageWidget = CachedNetworkImage(
+      imageUrl: finalUrl,
       width: size,
       height: size,
       fit: fit,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return effectivePlaceholder;
-      },
-      errorBuilder: (context, error, stackTrace) => effectiveErrorWidget,
+      placeholder: (context, url) => effectivePlaceholder,
+      errorWidget: (context, url, error) => effectiveErrorWidget,
+      // Force refresh cache nếu có cache key mới
+      cacheKey: cacheKey != null ? '${imageUrl}_$cacheKey' : null,
     );
 
     if (shape == AvatarShape.circle) {

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
 
 class ImageViewerPage extends StatelessWidget {
-  final String imageUrl;
+  final String? imageUrl;
+  final File? imageFile;
 
   const ImageViewerPage({
     super.key,
-    required this.imageUrl,
-  });
+    this.imageUrl,
+    this.imageFile,
+  }) : assert(imageUrl != null || imageFile != null, 'Either imageUrl or imageFile must be provided');
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +25,9 @@ class ImageViewerPage extends StatelessWidget {
         ),
       ),
       body: PhotoView(
-        imageProvider: NetworkImage(imageUrl),
+        imageProvider: imageFile != null 
+            ? FileImage(imageFile!) as ImageProvider
+            : CachedNetworkImageProvider(imageUrl!),
         minScale: PhotoViewComputedScale.contained,
         maxScale: PhotoViewComputedScale.covered * 2,
       ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:coka/core/theme/app_colors.dart';
 import '../constants/app_constants.dart';
 
@@ -44,6 +46,18 @@ class Helpers {
     if (imgData == null || imgData.isEmpty) return '';
     if (imgData.contains('https')) return imgData;
     return '$apiBaseUrl$imgData';
+  }
+
+  /// Clear cache cho một URL cụ thể
+  static Future<void> clearImageCache(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+    final url = getAvatarUrl(imageUrl);
+    await CachedNetworkImage.evictFromCache(url);
+  }
+
+  /// Clear toàn bộ image cache
+  static Future<void> clearAllImageCache() async {
+    await DefaultCacheManager().emptyCache();
   }
 
   static Color getColorFromText(String text) {

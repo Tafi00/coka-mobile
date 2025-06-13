@@ -9,6 +9,9 @@ class CustomAlertDialog extends StatelessWidget {
   final String submitText;
   final String cancelText;
   final bool isLoading;
+  final IconData? icon;
+  final Color? iconColor;
+  final bool showCancelButton;
 
   const CustomAlertDialog({
     super.key,
@@ -19,6 +22,9 @@ class CustomAlertDialog extends StatelessWidget {
     this.submitText = 'Đồng ý',
     this.cancelText = 'Hủy',
     this.isLoading = false,
+    this.icon,
+    this.iconColor,
+    this.showCancelButton = true,
   });
 
   @override
@@ -38,13 +44,13 @@ class CustomAlertDialog extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: (iconColor ?? AppColors.primary).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.help_outline,
+                icon ?? Icons.help_outline,
                 size: 32,
-                color: AppColors.primary,
+                color: iconColor ?? AppColors.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -74,61 +80,94 @@ class CustomAlertDialog extends StatelessWidget {
             const SizedBox(height: 24),
             
             // Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: isLoading ? null : (onCancel ?? () => Navigator.pop(context)),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: Colors.grey[300]!),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            if (showCancelButton)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: isLoading ? null : (onCancel ?? () => Navigator.pop(context)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      cancelText,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
+                      child: Text(
+                        cancelText,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[700],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : onSubmit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : onSubmit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
                       ),
-                      elevation: 0,
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              submitText,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                     ),
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            submitText,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
+                  ),
+                ],
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : onSubmit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
                           ),
-                  ),
+                        )
+                      : Text(
+                          submitText,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
@@ -147,6 +186,7 @@ void showCustomAlert({
   bool isWarning = false,
   IconData? icon,
   Color? iconColor,
+  bool showCancelButton = false,
 }) {
   showDialog(
     context: context,
@@ -161,6 +201,9 @@ void showCustomAlert({
       submitText: confirmText ?? 'OK',
       cancelText: cancelText ?? 'Hủy',
       isLoading: false,
+      icon: icon,
+      iconColor: iconColor,
+      showCancelButton: showCancelButton,
     ),
   );
 } 

@@ -141,7 +141,7 @@ class OrganizationDrawer extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.only(
-                      left: 16, right: 16, top: 32, bottom: 12),
+                      left: 16, right: 16, top: 64, bottom: 12),
                   color: Colors.white,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,7 +229,7 @@ class OrganizationDrawer extends StatelessWidget {
                           ListTile(
                             leading: const Icon(Icons.workspace_premium_outlined,
                                 color: AppColors.primary),
-                            title: const Text('Nâng cấp tài khoản'),
+                            title: const Text('Nâng cấp tổ chức'),
                             dense: true,
                             visualDensity: const VisualDensity(vertical: -1.0),
                             onTap: () {

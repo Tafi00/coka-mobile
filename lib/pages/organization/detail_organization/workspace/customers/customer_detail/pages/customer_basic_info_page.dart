@@ -11,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'dart:io';
 import '../../../../../../../core/theme/app_colors.dart';
+import '../../../../../../../core/utils/helpers.dart';
 import '../../../../../../../shared/widgets/custom_container.dart';
 import '../../../../../../../shared/widgets/awesome_alert.dart';
 import '../../../../../../../shared/widgets/image_viewer_page.dart';
@@ -48,6 +49,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
   final _picker = ImagePicker();
   XFile? _pickedImage;
   bool _isUploadingAvatar = false;
+  String? _avatarCacheKey; // Thêm cache key cho avatar
 
   @override
   void initState() {
@@ -240,6 +242,13 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
     }
   }
 
+  /// Reset picked image về null để hiển thị avatar từ server
+  void _resetPickedImage() {
+    setState(() {
+      _pickedImage = null;
+    });
+  }
+
   Future<void> _updateAvatar() async {
     if (_pickedImage == null) return;
 
@@ -275,6 +284,9 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
       );
 
       if (mounted) {
+        // Clear cache cũ cho avatar
+        await Helpers.clearImageCache(widget.customerDetail['avatar']);
+        
         // Refresh customer detail
         await ref
             .read(customerDetailProvider(widget.customerDetail['id']).notifier)
@@ -287,9 +299,10 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
           ),
         );
 
-        // Reset picked image
+        // Giữ nguyên picked image để hiển thị, không reset về null
+        // Chỉ cập nhật cache key để force refresh khi cần
         setState(() {
-          _pickedImage = null;
+          _avatarCacheKey = DateTime.now().millisecondsSinceEpoch.toString();
         });
       }
     } catch (e) {
@@ -302,9 +315,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
         );
         
         // Reset picked image on error
-        setState(() {
-          _pickedImage = null;
-        });
+        _resetPickedImage();
       }
     } finally {
       if (mounted) {
@@ -435,6 +446,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
                     builder: (context) => AssignToBottomSheet(
                       organizationId: organizationId,
                       workspaceId: workspaceId,
@@ -620,7 +632,17 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
                           padding: const EdgeInsets.all(4.0),
                           child: GestureDetector(
                             onTap: () {
-                              if (customerData['avatar'] != null) {
+                              // Ưu tiên hiển thị picked image trước
+                              if (_pickedImage != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ImageViewerPage(
+                                      imageFile: File(_pickedImage!.path),
+                                    ),
+                                  ),
+                                );
+                              } else if (customerData['avatar'] != null) {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -645,6 +667,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
                                     fallbackText: customerData['fullName'] ?? '',
                                     size: 68,
                                     shape: AvatarShape.circle,
+                                    cacheKey: _avatarCacheKey,
                                   ),
                           ),
                         ),
