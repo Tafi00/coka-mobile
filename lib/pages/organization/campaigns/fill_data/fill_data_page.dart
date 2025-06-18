@@ -544,7 +544,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          ...state.packages.map((package) => _buildPackageOption(package)).toList(),
+          ...state.packages.map((package) => _buildPackageOption(package)),
         ],
       ),
     );

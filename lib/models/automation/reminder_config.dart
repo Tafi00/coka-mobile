@@ -1,105 +1,169 @@
 class ReminderConfig {
-  final String id;
-  final int time;
-  final List<String> stages;
-  final List<int> hourFrame;
-  final List<String> sourceIds;
-  final List<String> utmSources;
-  final List<String> workspaceIds;
-  final String notificationMessage;
-  final String organizationId;
-  final bool isActive;
-  final int repeat;
-  final int repeatTime;
-  final String createdAt;
-  final List<Map<String, dynamic>> report;
+  final String? id;
+  final String? name;
+  final String? organizationId;
+  final String? workspaceId;
+  final ReminderCondition? condition;
+  final int? duration; // phút
+  final List<String>? hourFrame;
+  final List<String>? notifications;
+  final String? notificationMessage;
+  final List<String>? weekdays;
+  final bool? repeatEnabled;
+  final int? repeatCount;
+  final int? repeatInterval; // phút
+  final bool? isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final List<dynamic>? report; // API report data
 
-  const ReminderConfig({
-    required this.id,
-    required this.time,
-    required this.stages,
-    required this.hourFrame,
-    required this.sourceIds,
-    required this.utmSources,
-    required this.workspaceIds,
-    required this.notificationMessage,
-    required this.organizationId,
-    required this.isActive,
-    required this.repeat,
-    required this.repeatTime,
-    required this.createdAt,
-    required this.report,
+  ReminderConfig({
+    this.id,
+    this.name,
+    this.organizationId,
+    this.workspaceId,
+    this.condition,
+    this.duration,
+    this.hourFrame,
+    this.notifications,
+    this.notificationMessage,
+    this.weekdays,
+    this.repeatEnabled,
+    this.repeatCount,
+    this.repeatInterval,
+    this.isActive,
+    this.createdAt,
+    this.updatedAt,
+    this.report,
   });
 
   factory ReminderConfig.fromJson(Map<String, dynamic> json) {
     return ReminderConfig(
-      id: json['id'] ?? '',
-      time: json['Time'] ?? 0,
-      stages: List<String>.from(json['Stages'] ?? []),
-      hourFrame: List<int>.from(json['HourFrame'] ?? []),
-      sourceIds: List<String>.from(json['SourceIds'] ?? []),
-      utmSources: List<String>.from(json['UtmSources'] ?? []),
-      workspaceIds: List<String>.from(json['WorkspaceIds'] ?? []),
-      notificationMessage: json['NotificationMessage'] ?? '',
-      organizationId: json['OrganizationId'] ?? '',
-      isActive: json['IsActive'] ?? false,
-      repeat: json['Repeat'] ?? 0,
-      repeatTime: json['RepeatTime'] ?? 0,
-      createdAt: json['CreatedAt'] ?? '',
-      report: List<Map<String, dynamic>>.from(json['Report'] ?? []),
+      id: json['id'],
+      name: json['name'],
+      organizationId: json['organizationId'],
+      workspaceId: json['workspaceId'],
+      condition: json['condition'] != null 
+          ? ReminderCondition.fromJson(json['condition']) 
+          : null,
+      duration: json['duration'] is String ? int.tryParse(json['duration']) : json['duration'],
+      hourFrame: json['hourFrame']?.cast<String>(),
+      notifications: json['notifications']?.cast<String>(),
+      notificationMessage: json['notificationMessage'],
+      weekdays: json['weekdays']?.cast<String>(),
+      repeatEnabled: json['repeatEnabled'],
+      repeatCount: json['repeatCount'] is String ? int.tryParse(json['repeatCount']) : json['repeatCount'],
+      repeatInterval: json['repeatInterval'] is String ? int.tryParse(json['repeatInterval']) : json['repeatInterval'],
+      isActive: json['isActive'],
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']) 
+          : null,
+      updatedAt: json['updatedAt'] != null 
+          ? DateTime.parse(json['updatedAt']) 
+          : null,
+      report: json['report'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'Time': time,
-      'Stages': stages,
-      'HourFrame': hourFrame,
-      'SourceIds': sourceIds,
-      'UtmSources': utmSources,
-      'WorkspaceIds': workspaceIds,
-      'NotificationMessage': notificationMessage,
-      'OrganizationId': organizationId,
-      'IsActive': isActive,
-      'Repeat': repeat,
-      'RepeatTime': repeatTime,
-      'CreatedAt': createdAt,
-      'Report': report,
+      'name': name,
+      'organizationId': organizationId,
+      'workspaceId': workspaceId,
+      'condition': condition?.toJson(),
+      'duration': duration,
+      'hourFrame': hourFrame,
+      'notifications': notifications,
+      'notificationMessage': notificationMessage,
+      'weekdays': weekdays,
+      'repeatEnabled': repeatEnabled,
+      'repeatCount': repeatCount,
+      'repeatInterval': repeatInterval,
+      'isActive': isActive,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'report': report,
     };
   }
 
   ReminderConfig copyWith({
     String? id,
-    int? time,
-    List<String>? stages,
-    List<int>? hourFrame,
-    List<String>? sourceIds,
-    List<String>? utmSources,
-    List<String>? workspaceIds,
-    String? notificationMessage,
+    String? name,
     String? organizationId,
+    String? workspaceId,
+    ReminderCondition? condition,
+    int? duration,
+    List<String>? hourFrame,
+    List<String>? notifications,
+    String? notificationMessage,
+    List<String>? weekdays,
+    bool? repeatEnabled,
+    int? repeatCount,
+    int? repeatInterval,
     bool? isActive,
-    int? repeat,
-    int? repeatTime,
-    String? createdAt,
-    List<Map<String, dynamic>>? report,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<dynamic>? report,
   }) {
     return ReminderConfig(
       id: id ?? this.id,
-      time: time ?? this.time,
-      stages: stages ?? this.stages,
-      hourFrame: hourFrame ?? this.hourFrame,
-      sourceIds: sourceIds ?? this.sourceIds,
-      utmSources: utmSources ?? this.utmSources,
-      workspaceIds: workspaceIds ?? this.workspaceIds,
-      notificationMessage: notificationMessage ?? this.notificationMessage,
+      name: name ?? this.name,
       organizationId: organizationId ?? this.organizationId,
+      workspaceId: workspaceId ?? this.workspaceId,
+      condition: condition ?? this.condition,
+      duration: duration ?? this.duration,
+      hourFrame: hourFrame ?? this.hourFrame,
+      notifications: notifications ?? this.notifications,
+      notificationMessage: notificationMessage ?? this.notificationMessage,
+      weekdays: weekdays ?? this.weekdays,
+      repeatEnabled: repeatEnabled ?? this.repeatEnabled,
+      repeatCount: repeatCount ?? this.repeatCount,
+      repeatInterval: repeatInterval ?? this.repeatInterval,
       isActive: isActive ?? this.isActive,
-      repeat: repeat ?? this.repeat,
-      repeatTime: repeatTime ?? this.repeatTime,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       report: report ?? this.report,
     );
+  }
+}
+
+class ReminderCondition {
+  final String? conjunction;
+  final List<ReminderCondition>? conditions;
+  final String? field;
+  final String? operator;
+  final dynamic value;
+
+  ReminderCondition({
+    this.conjunction,
+    this.conditions,
+    this.field,
+    this.operator,
+    this.value,
+  });
+
+  factory ReminderCondition.fromJson(Map<String, dynamic> json) {
+    return ReminderCondition(
+      conjunction: json['conjunction'],
+      conditions: json['conditions'] != null
+          ? (json['conditions'] as List)
+              .map((e) => ReminderCondition.fromJson(e))
+              .toList()
+          : null,
+      field: json['field'],
+      operator: json['operator'],
+      value: json['value'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'conjunction': conjunction,
+      'conditions': conditions?.map((e) => e.toJson()).toList(),
+      'field': field,
+      'operator': operator,
+      'value': value,
+    };
   }
 } 

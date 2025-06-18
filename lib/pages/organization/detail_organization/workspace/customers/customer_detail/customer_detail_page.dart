@@ -511,7 +511,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                        'Xóa khách hàng',
                        style: TextStyle(
                          fontSize: 14,
-                         fontWeight: FontWeight.w400,
+                        fontWeight: FontWeight.w400,
                          color: Colors.red,
                        ),
                      ),

@@ -28,7 +28,6 @@ class NewAutomationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isActive = data['isActive'] ?? false;
     final String title = _getTitle();
-    final String description = _getDescription();
     final List<StatisticsData> statistics = _getStatistics();
     
     return AutomationCardBase(
@@ -38,7 +37,7 @@ class NewAutomationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row: Badge + Switch
+          // Header Row: Badge + Icons + Switch
           Row(
             children: [
               AutomationBadge(
@@ -63,35 +62,35 @@ class NewAutomationCard extends StatelessWidget {
             ],
           ),
           
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           
           // Content Area
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title
-                Text(
-                  title,
-                  style: AutomationTextStyles.cardTitle(isActive),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                
-                const SizedBox(height: 1),
-                
-                // Description
-                if (description.isNotEmpty)
+                // Title and description based on type
+                if (type == 'reminder') ...[
+                  // Reminder format: "title description"
                   Text(
-                    description,
-                    style: AutomationTextStyles.cardSubtitle(isActive),
-                    maxLines: 1,
+                    '$title ${_getDescription()}',
+                    style: AutomationTextStyles.cardTitle(isActive),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ] else ...[
+                  // Eviction format: "title: description"
+                  Text(
+                    '$title: ${_getDescription()}',
+                    style: AutomationTextStyles.cardTitle(isActive),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 
-                // Workspace
+                // Workspace info
                 Text(
                   'Tại không gian làm việc: ${_getWorkspaceName()}',
                   style: AutomationTextStyles.workspaceName(isActive),
@@ -101,14 +100,15 @@ class NewAutomationCard extends StatelessWidget {
                 
                 const Spacer(),
                 
-                // Statistics (always show at bottom)
-                Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: StatisticsRow(
-                    statistics: statistics,
-                    isActive: isActive,
+                // Statistics (show at bottom)
+                if (statistics.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: StatisticsRow(
+                      statistics: statistics,
+                      isActive: isActive,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -118,58 +118,133 @@ class NewAutomationCard extends StatelessWidget {
   }
   
   String _getTitle() {
-    final String baseTitle = data['title'] ?? 'Untitled';
-    
     if (type == 'reminder') {
-      final int minutes = data['minutes'] ?? 30;
+      final durationValue = data['duration'] ?? data['time'] ?? data['minutes'] ?? 30;
+      final int minutes = durationValue is String ? int.tryParse(durationValue) ?? 30 : durationValue as int;
       final String duration = _formatDuration(minutes);
       return 'Gửi thông báo sau $duration tiếp nhận khách hàng';
     } else {
-      final int hours = data['hours'] ?? 24;
-      final String duration = _formatDuration(hours * 60);
+      // Eviction rule title format: "Thu hồi Lead sau {duration}"
+      final durationValue = data['duration'];
+      final hoursValue = data['hours'] ?? 24;
+      final int hours = hoursValue is String ? int.tryParse(hoursValue) ?? 24 : hoursValue as int;
+      final int minutes = durationValue is String ? int.tryParse(durationValue) ?? (hours * 60) : (durationValue ?? (hours * 60)) as int;
+      final String duration = _formatDuration(minutes);
       return 'Thu hồi Lead sau $duration';
     }
   }
   
   String _getDescription() {
-    final String description = data['description'] ?? '';
-    if (description.isNotEmpty) return description;
-    
     if (type == 'reminder') {
-      return 'thuộc bất kỳ trạng thái nào';
+      // Hiển thị thông tin stages nếu có
+      final List<dynamic>? stages = data['stages'];
+      if (stages == null || stages.isEmpty) {
+        return 'thuộc bất kỳ trạng thái';
+      }
+      
+      // TODO: Convert stage IDs to stage names
+      // For now, just show generic text
+      return 'thuộc bất kỳ trạng thái';
     } else {
-      return 'chuyển trạng thái chăm sóc';
+      // Eviction: Check stage update information
+      return _getStageUpdateText();
     }
   }
   
+  String _getStageUpdateText() {
+    final List<dynamic>? stages = data['stages'];
+    
+    if (stages == null || stages.isEmpty) {
+      return 'không cập nhật trạng thái chăm sóc';
+    }
+    
+    // Nếu chỉ có 1 stage với ID 00000000-0000-0000-0000-000000000000
+    if (stages.length == 1) {
+      final stageData = stages[0];
+      final String stageId = stageData is Map ? (stageData['stageId'] ?? '') : stageData.toString();
+      if (stageId == "00000000-0000-0000-0000-000000000000") {
+        return 'không cập nhật trạng thái chăm sóc';
+      }
+    }
+    
+    // TODO: Convert stage IDs to actual stage names
+    // For now, show generic text
+    return 'chuyển trạng thái chăm sóc';
+  }
+  
   String _getWorkspaceName() {
-    return 'Mặc định'; // Simplified for now
+    // Get workspace name from data, fallback to 'Mặc định'
+    final String workspaceName = data['workspaceName'] ?? data['workspace'] ?? 'Mặc định';
+    return workspaceName;
   }
   
   List<StatisticsData> _getStatistics() {
-    // Always show statistics, even with 0 counts
     if (type == 'reminder') {
+      // Reminder lấy từ Report field
+      final List<dynamic>? reportData = data['Report'] ?? data['report'];
+      
+      if (reportData != null && reportData.isNotEmpty) {
+        return reportData.map((stat) {
+          final countValue = stat['NumberItem'] ?? stat['numberItem'] ?? stat['count'] ?? 0;
+          final count = countValue is String ? int.tryParse(countValue) ?? 0 : countValue as int;
+          return StatisticsData(
+            name: stat['Name'] ?? stat['name'] ?? '',
+            count: count,
+          );
+        }).toList();
+      }
+      
+      // Fallback for reminder
       return [
-        const StatisticsData(name: 'Đã gửi', count: 45),
-        const StatisticsData(name: 'Chờ xử lý', count: 12),
+        const StatisticsData(name: 'Đã gửi', count: 0),
+        const StatisticsData(name: 'Chờ xử lý', count: 0),
       ];
     } else {
+      // Eviction lấy từ statistics field
+      final List<dynamic>? statisticsData = data['statistics'];
+      
+      if (statisticsData != null && statisticsData.isNotEmpty) {
+        return statisticsData.map((stat) {
+          final countValue = stat['numberItem'] ?? stat['count'] ?? 0;
+          final count = countValue is String ? int.tryParse(countValue) ?? 0 : countValue as int;
+          return StatisticsData(
+            name: stat['name'] ?? '',
+            count: count,
+          );
+        }).toList();
+      }
+      
+      // Fallback for eviction
       return [
-        const StatisticsData(name: 'Đã thu hồi', count: 0), // Show 0 count
-        const StatisticsData(name: 'Đang xử lý', count: 5),
+        const StatisticsData(name: 'Đã hủy', count: 0),
+        const StatisticsData(name: 'Chờ thu hồi', count: 0),
+        const StatisticsData(name: 'Đã thu hồi', count: 0),
       ];
     }
   }
   
   bool _hasWorkingHours() {
-    return true; // All automations respect working hours
+    if (type == 'reminder') {
+      // Hiển thị cho mọi reminder config
+      return true;
+    } else {
+      // Eviction: Chỉ hiển thị nếu có hourFrame
+      final List<dynamic>? hourFrame = data['hourFrame'];
+      return hourFrame != null && hourFrame.isNotEmpty;
+    }
   }
   
   bool _hasRepeat() {
     if (type == 'reminder') {
-      return true; // Reminders can repeat
+      // Hiển thị cho reminder có repeat > 0
+      final repeatValue = data['repeat'] ?? data['Repeat'] ?? 0;
+      final repeat = repeatValue is String ? int.tryParse(repeatValue) ?? 0 : repeatValue as int;
+      return repeat > 0;
+    } else {
+      // Eviction: Hiển thị nếu có notifications
+      final List<dynamic>? notifications = data['notifications'];
+      return notifications != null && notifications.isNotEmpty;
     }
-    return false; // Eviction rules don't repeat
   }
   
   String _formatDuration(int minutes) {

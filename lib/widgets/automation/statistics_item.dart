@@ -22,7 +22,7 @@ class StatisticItem extends StatelessWidget {
     return Tooltip(
       message: _getTooltipMessage(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
           color: isActive 
               ? AutomationColors.statsBackgroundActive 
@@ -34,16 +34,16 @@ class StatisticItem extends StatelessWidget {
           children: [
             Icon(
               _getIcon(),
-              size: 12,
+              size: 10,
               color: isActive 
                   ? AutomationColors.textOnPrimary 
                   : AutomationColors.textPrimary,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
             Text(
               count.toString(),
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: isActive 
                     ? AutomationColors.textOnPrimary 
@@ -105,25 +105,25 @@ class StatisticsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     if (statistics.isEmpty) return const SizedBox.shrink();
     
-    return Row(
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
       children: statistics.map((stat) {
         StatisticType type;
         if (stat.name.contains('hủy') || stat.name.contains('Hủy')) {
           type = StatisticType.cancelled;
-        } else if (stat.name.contains('chờ') || stat.name.contains('Chờ')) {
+        } else if (stat.name.contains('chờ') || stat.name.contains('Chờ') || 
+                   stat.name.contains('thu hồi') && stat.name.contains('Chờ')) {
           type = StatisticType.pending;
         } else {
           type = StatisticType.completed;
         }
         
-        return Padding(
-          padding: const EdgeInsets.only(right: 6),
-          child: StatisticItem(
-            type: type,
-            count: stat.count,
-            isActive: isActive,
-            customLabel: stat.name,
-          ),
+        return StatisticItem(
+          type: type,
+          count: stat.count,
+          isActive: isActive,
+          customLabel: stat.name,
         );
       }).toList(),
     );

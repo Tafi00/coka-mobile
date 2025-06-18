@@ -8,6 +8,7 @@ import './stage_select.dart';
 import './journey_item.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../../../../models/stage.dart';
+import '../../../../../../../widgets/reminder/customer_reminder_card.dart';
 
 class CustomerJourney extends ConsumerStatefulWidget {
   const CustomerJourney({super.key});
@@ -255,6 +256,7 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
     final params = GoRouterState.of(context).pathParameters;
     final customerId = params['customerId']!;
     final journeyState = ref.watch(customerJourneyProvider(customerId));
+    final customerDetailState = ref.watch(customerDetailProvider(customerId));
     final viewInsets = MediaQuery.of(context).viewInsets;
     final isKeyboardVisible = viewInsets.bottom > 0;
 
@@ -285,127 +287,176 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Container(
-                  constraints: BoxConstraints(
-                    minHeight: MediaQuery.of(context).size.height -
-                        (_isInputFocused
-                            ? viewInsets.bottom + 180
-                            : 80), // 180 là chiều cao ước tính của stage select + input
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      journeyState.when(
-                        loading: () => Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Column(
-                            children: List.generate(
-                              6, // Tăng số lượng items
-                              (index) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
+                padding: EdgeInsets.only(
+                  bottom: _isInputFocused 
+                    ? 200  // Để đủ space cho stage select + input + keyboard
+                    : 100, // Để đủ space cho input khi không focus
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    journeyState.when(
+                      loading: () => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Column(
+                          children: List.generate(
+                            6, // Tăng số lượng items
+                            (index) => Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: double.infinity,
+                                          height: 16,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          width: 200,
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          width: 140,
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      error: (error, stack) => Center(
+                        child: Text(
+                          'Có lỗi xảy ra: $error',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                      data: (journeyList) => journeyList.isEmpty
+                          ? const Center(
+                              child: Text('Chưa có hành trình nào'),
+                            )
+                          : Column(
+                              children: () {
+                                final groupedJourneys = _groupJourneysByDate(journeyList);
+                                final sortedKeys = groupedJourneys.keys.toList()
+                                  ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
+                                
+                                List<Widget> widgets = [];
+                                
+                                // Thêm reminder card ở đầu
+                                final params = GoRouterState.of(context).pathParameters;
+                                final organizationId = params['organizationId']!;
+                                final workspaceId = params['workspaceId']!;
+                                
+                                widgets.add(
+                                  CustomerReminderCard(
+                                    organizationId: organizationId,
+                                    workspaceId: workspaceId,
+                                    customerId: customerId,
+                                    customerData: customerDetailState.value,
+                                    onAddReminder: () {
+                                      // Có thể thêm logic để scroll đến reminder section hoặc highlight
+                                    },
+                                  ),
+                                );
+                                
+                                // Thêm header "Lịch sử" nếu có journey
+                                if (sortedKeys.isNotEmpty) {
+                                  widgets.add(
+                                    Container(
+                                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                                      child: Row(
                                         children: [
                                           Container(
-                                            width: double.infinity,
-                                            height: 16,
+                                            width: 24,
+                                            height: 24,
                                             decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
+                                              color: const Color(0xFF5C33F0).withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(
+                                              Icons.history,
+                                              size: 16,
+                                              color: Color(0xFF5C33F0),
                                             ),
                                           ),
-                                          const SizedBox(height: 8),
-                                          Container(
-                                            width: 200,
-                                            height: 14,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Container(
-                                            width: 140,
-                                            height: 14,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Lịch sử',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF1F2329),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        error: (error, stack) => Center(
-                          child: Text(
-                            'Có lỗi xảy ra: $error',
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ),
-                        data: (journeyList) => journeyList.isEmpty
-                            ? const Center(
-                                child: Text('Chưa có hành trình nào'),
-                              )
-                            : Column(
-                                children: () {
-                                  final groupedJourneys = _groupJourneysByDate(journeyList);
-                                  final sortedKeys = groupedJourneys.keys.toList()
-                                    ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
+                                  );
+                                }
+                                
+                                for (int i = 0; i < sortedKeys.length; i++) {
+                                  final dateKey = sortedKeys[i];
+                                  final journeys = groupedJourneys[dateKey]!;
+                                  final dateTitle = _getDateTitle(dateKey);
                                   
-                                  List<Widget> widgets = [];
+                                  // Thêm divider với time title
+                                  widgets.add(_buildDateDivider(dateTitle));
                                   
-                                  for (int i = 0; i < sortedKeys.length; i++) {
-                                    final dateKey = sortedKeys[i];
-                                    final journeys = groupedJourneys[dateKey]!;
-                                    final dateTitle = _getDateTitle(dateKey);
+                                  // Thêm các journey items của ngày đó
+                                  for (int j = 0; j < journeys.length; j++) {
+                                    final isLastItemOfDay = j == journeys.length - 1;
+                                    final isLastItemOverall = i == sortedKeys.length - 1 && isLastItemOfDay;
                                     
-                                    // Thêm divider với time title
-                                    widgets.add(_buildDateDivider(dateTitle));
-                                    
-                                    // Thêm các journey items của ngày đó
-                                    for (int j = 0; j < journeys.length; j++) {
-                                      final isLastItemOfDay = j == journeys.length - 1;
-                                      final isLastItemOverall = i == sortedKeys.length - 1 && isLastItemOfDay;
-                                      
-                                      widgets.add(
-                                        JourneyItem(
-                                          dataItem: journeys[j],
-                                          isLast: isLastItemOverall,
-                                        ),
-                                      );
-                                    }
+                                    widgets.add(
+                                      JourneyItem(
+                                        dataItem: journeys[j],
+                                        isLast: isLastItemOverall,
+                                      ),
+                                    );
                                   }
-                                  
-                                  return widgets;
-                                }(),
-                              ),
-                      ),
-                    ],
-                  ),
+                                }
+                                
+                                return widgets;
+                              }(),
+                            ),
+                    ),
+                  ],
                 ),
               ),
             ),

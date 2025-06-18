@@ -5,14 +5,16 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/text_styles.dart';
 import '../../core/theme/app_colors.dart';
 import '../../api/repositories/notification_repository.dart';
 import '../../api/api_client.dart';
+import '../../providers/organization_provider.dart';
 import 'loading_dialog.dart';
 
-class NotificationListWidget extends StatefulWidget {
+class NotificationListWidget extends ConsumerStatefulWidget {
   final String? organizationId;
   final int? maxItems;
   final bool showTitle;
@@ -33,10 +35,10 @@ class NotificationListWidget extends StatefulWidget {
   });
 
   @override
-  State<NotificationListWidget> createState() => _NotificationListWidgetState();
+  ConsumerState<NotificationListWidget> createState() => _NotificationListWidgetState();
 }
 
-class _NotificationListWidgetState extends State<NotificationListWidget> {
+class _NotificationListWidgetState extends ConsumerState<NotificationListWidget> {
   late final NotificationRepository _notificationRepository;
   late final PagingController<int, Map<String, dynamic>> _pagingController;
   List<dynamic>? _notifications;
@@ -235,16 +237,12 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
   }
 
   void _handleNotificationTap(Map<String, dynamic> notification) {
-    // Đánh dấu thông báo là đã đọc
-    final String id = notification['id'];
-    _markAsRead(id);
-
-    // Điều hướng dựa trên thông báo
+    // Điều hướng dựa trên thông báo (mark as read được xử lý trong onTap)
     _navigateBasedOnNotificationType(notification);
   }
 
   // Hàm điều hướng dựa trên loại thông báo
-  void _navigateBasedOnNotificationType(Map<String, dynamic> notification) {
+  void _navigateBasedOnNotificationType(Map<String, dynamic> notification) async {
     if (!mounted) return;
     
     // Đóng bottom sheet nếu đang hiển thị
@@ -272,6 +270,22 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
       }
     }
 
+    // Kiểm tra xem có cần đổi tổ chức không
+    final currentOrgId = widget.organizationId;
+    if (organizationId != currentOrgId && organizationId.isNotEmpty) {
+      // Nếu thông báo từ tổ chức khác, lưu default organization
+      // Navigation sẽ trigger OrganizationPage.didUpdateWidget và tự động load tổ chức mới
+      try {
+        await ApiClient.storage.write(
+          key: 'default_organization_id', 
+          value: organizationId
+        );
+        print('Đã cập nhật default organization thành: $organizationId');
+      } catch (e) {
+        print('Lỗi khi lưu default organization: $e');
+      }
+    }
+
     // Xác định route dựa vào category và metadata
     String route = '';
     
@@ -292,7 +306,7 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
     } else if (['GRANT_ROLE_USER_TEAM', 'ADD_USER_TEAM'].contains(category)) {
       route = '/organization/$organizationId/workspace/$workspaceId/teams';
     } else if (['VERIFY_WEBSITE', 'CONNECT_FORM', 'EXPIRED_ACCESSTOKEN'].contains(category)) {
-      route = '/organization/$organizationId/campaigns/multiconnect';
+      route = '/organization/$organizationId/campaigns/multi-source-connection';
     } else if (['INVITE_MEMBER', 'REQUEST_ORGANIZATION'].contains(category)) {
       // Trường hợp đặc biệt - không điều hướng
       return;
@@ -301,9 +315,60 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
       route = '/organization/$organizationId';
     }
 
-    // Thực hiện điều hướng
+    // Thực hiện điều hướng  
     if (route.isNotEmpty) {
-      context.go(route);
+      // Phân loại routes
+      final routesWithoutShell = [
+        '/organization/$organizationId/campaigns/multi-source-connection',
+        '/organization/$organizationId/campaigns/fill-data', 
+        '/organization/$organizationId/campaigns/automation'
+      ];
+      
+      final workspaceRoutes = route.contains('/workspace/');
+      final isRouteWithoutShell = routesWithoutShell.contains(route);
+      
+      if (organizationId != currentOrgId) {
+        // Đổi tổ chức
+        if (isRouteWithoutShell) {
+          print('Navigate đến tổ chức khác qua route ngoài shell, đi qua base trước: $route');
+          // Đối với routes ngoài shell, phải đi qua base organization trước để trigger OrganizationPage
+          context.go('/organization/$organizationId');
+          // Đợi OrganizationPage load xong, rồi mới navigate đến route đích
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted) {
+              context.push(route);
+            }
+          });
+        } else {
+          print('Navigate đến tổ chức khác qua route có shell: $route');
+          // Routes có shell, có thể go trực tiếp
+          context.go(route);
+        }
+      } else {
+        // Cùng tổ chức
+        print('Navigate trong cùng tổ chức: $route');
+        
+        if (widget.fullScreen) {
+          // Trong bottom sheet - an toàn dùng context.go cho tất cả cases
+          print('Navigate từ bottom sheet - sử dụng context.go: $route');
+          context.push(route);
+        } else {
+          // Trong compact view - cần cẩn thận với navigation
+          if (isRouteWithoutShell) {
+            // Routes ngoài shell - dùng push để giữ stack, GoRouter sẽ tự handle
+            print('Compact view - route ngoài shell, sử dụng push: $route');
+            context.push(route);
+          } else if (workspaceRoutes) {
+            // Workspace routes - dùng context.go để tránh stack corruption
+            print('Compact view - sử dụng context.go cho workspace route: $route');
+            context.go(route);
+          } else {
+            // Routes đơn giản - có thể push an toàn
+            print('Compact view - sử dụng context.push cho route đơn giản: $route');
+            context.push(route);
+          }
+        }
+      }
     }
   }
 
@@ -401,13 +466,23 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
         // Bold text
         spans.add(TextSpan(
           text: match.group(1),
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+            fontFamily: 'GoogleSans',
+            color: AppColors.text,
+          ),
         ));
       } else if (match.group(2) != null) {
         // Normal text
         spans.add(TextSpan(
           text: match.group(2),
-          style: const TextStyle(fontWeight: FontWeight.w400),
+          style: const TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 13,
+            fontFamily: 'GoogleSans',
+            color: AppColors.text,
+          ),
         ));
       }
     }
@@ -421,15 +496,21 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
 
     return InkWell(
       onTap: () async {
+        // Xử lý điều hướng trước để tránh conflict với setState
+        _handleNotificationTap(notification);
+        
+        // Đánh dấu đã đọc sau khi navigate để tránh interrupt
         if (!isRead) {
-          await _markAsRead(notification['id']);
-          setState(() {
-            notification['status'] = 0;
+          _markAsRead(notification['id']);
+          // Delay setState để đảm bảo navigation đã hoàn thành
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              setState(() {
+                notification['status'] = 0;
+              });
+            }
           });
         }
-        
-        // Xử lý điều hướng dựa trên loại thông báo
-        _handleNotificationTap(notification);
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -473,7 +554,8 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
                     overflow: TextOverflow.ellipsis,
                     text: TextSpan(
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
+                        fontFamily: 'GoogleSans',
                         color: AppColors.text,
                       ),
                       children: _parseHtmlText(notification['contentHtml'] ?? ''),
@@ -483,7 +565,8 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
                   Text(
                     timeAgo,
                     style: const TextStyle(
-                      fontSize: 12, 
+                      fontSize: 11,
+                      fontFamily: 'GoogleSans',
                       color: AppColors.textTertiary,
                     ),
                   ),

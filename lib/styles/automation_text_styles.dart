@@ -4,7 +4,7 @@ import '../constants/automation_colors.dart';
 class AutomationTextStyles {
   // Title styles
   static TextStyle cardTitle(bool isActive) => TextStyle(
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: FontWeight.w600,
     color: isActive 
         ? AutomationColors.textOnPrimary 
@@ -13,7 +13,7 @@ class AutomationTextStyles {
   
   // Subtitle styles
   static TextStyle cardSubtitle(bool isActive) => TextStyle(
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: FontWeight.w400,
     color: isActive 
         ? AutomationColors.textOnPrimarySecondary 
@@ -22,7 +22,7 @@ class AutomationTextStyles {
   
   // Workspace name style
   static TextStyle workspaceName(bool isActive) => TextStyle(
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: FontWeight.w400,
     color: isActive 
         ? AutomationColors.textOnPrimarySecondary 

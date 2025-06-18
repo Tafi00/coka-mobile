@@ -217,28 +217,13 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 16.0, right: 16, top: 16),
-            child: Row(
-              children: [
-                CustomSearchBar(
-                  width: MediaQuery.of(context).size.width - 110,
-                  hintText: "Tìm kiếm",
-                  onQueryChanged: (value) {
-                    searchText.text = value;
-                    onTeamSearchChanged(value);
-                  },
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {
-                    // TODO: Add team/member
-                  },
-                  icon: const Icon(Icons.add),
-                  style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFF2F3F5),
-                    minimumSize: const Size(55, 55),
-                  ),
-                )
-              ],
+            child: CustomSearchBar(
+              width: MediaQuery.of(context).size.width - 32,
+              hintText: "Tìm kiếm",
+              onQueryChanged: (value) {
+                searchText.text = value;
+                onTeamSearchChanged(value);
+              },
             ),
           ),
           const SizedBox(height: 10),

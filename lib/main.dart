@@ -46,7 +46,17 @@ void main() async {
 
       return null;
     },
+    observers: [
+      RouteObserver<ModalRoute<void>>(),
+    ],
+    debugLogDiagnostics: true,
   );
+
+  // Lắng nghe sự thay đổi route
+  appRouter.routerDelegate.addListener(() {
+    final currentRoute = appRouter.routerDelegate.currentConfiguration;
+    print('🚀 Route changed to: ${currentRoute.uri.toString()}');
+  });
 
   timeago.setLocaleMessages('vi', CustomViMessages());
 

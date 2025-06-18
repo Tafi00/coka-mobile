@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../constants/dialog_colors.dart';
-import '../../models/automation_scenario.dart';
-import '../../styles/dialog_text_styles.dart';
-import 'scenario_card.dart';
+import '../../../../../constants/dialog_colors.dart';
+import '../../../../../models/automation_scenario.dart';
+import 'simple_scenario_card.dart';
 
 class AutomationScenarioDialog extends StatefulWidget {
-  final Function(String scenarioType)? onScenarioSelected;
-  
-  const AutomationScenarioDialog({
-    super.key,
-    this.onScenarioSelected,
-  });
+  const AutomationScenarioDialog({super.key});
   
   @override
   State<AutomationScenarioDialog> createState() => _AutomationScenarioDialogState();
@@ -102,7 +96,9 @@ class _AutomationScenarioDialogState extends State<AutomationScenarioDialog>
                   scale: _dialogAnimation,
                   child: _DialogContent(
                     cardsController: _cardsController,
-                    onScenarioSelected: widget.onScenarioSelected,
+                    onScenarioSelected: (scenarioType) {
+                      Navigator.of(context).pop(scenarioType);
+                    },
                     onClose: _closeDialog,
                   ),
                 ),
@@ -137,19 +133,23 @@ class _DialogContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scenarios = _getScenarios();
+    final screenSize = MediaQuery.of(context).size;
     
     return Container(
-      width: MediaQuery.of(context).size.width * 0.9,
-      constraints: const BoxConstraints(maxWidth: 900),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      width: double.infinity,
+      constraints: BoxConstraints(
+        maxHeight: screenSize.height * 0.8,
+      ),
+      margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: DialogColors.dialogBackground,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: DialogColors.cardShadow,
+            color: Colors.black.withOpacity(0.15),
             blurRadius: 24,
             offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
         ],
       ),
@@ -159,10 +159,10 @@ class _DialogContent extends StatelessWidget {
           // Header
           _DialogHeader(onClose: onClose),
           
-          // Content
+          // Content với Flexible để tránh overflow
           Flexible(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: _ScenarioGrid(
                 scenarios: scenarios,
                 cardsController: cardsController,
@@ -203,22 +203,39 @@ class _DialogHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 16, 16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Color(0xFFF3F4F6),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               'Chọn kịch bản Automation',
-              style: DialogTextStyles.dialogTitle,
-              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF111827),
+                letterSpacing: -0.5,
+              ),
             ),
           ),
           IconButton(
             onPressed: onClose,
-            icon: const Icon(Icons.close, size: 20),
+            icon: const Icon(Icons.close, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.grey.withOpacity(0.1),
-              foregroundColor: Colors.grey[600],
+              backgroundColor: const Color(0xFFF9FAFB),
+              foregroundColor: const Color(0xFF6B7280),
+              padding: const EdgeInsets.all(10),
+              minimumSize: const Size(40, 40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
         ],
@@ -240,42 +257,23 @@ class _ScenarioGrid extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = _getCrossAxisCount(constraints.maxWidth);
-        final aspectRatio = _getAspectRatio(constraints.maxWidth);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: scenarios.asMap().entries.map((entry) {
+        final index = entry.key;
+        final scenario = entry.value;
         
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 24,
-            mainAxisSpacing: 24,
-            childAspectRatio: aspectRatio,
+        return Container(
+          margin: EdgeInsets.only(bottom: index < scenarios.length - 1 ? 16 : 0),
+          height: 120, // Fixed height cho mỗi card
+          child: SimpleScenarioCard(
+            scenario: scenario,
+            animationController: cardsController,
+            animationDelay: Duration(milliseconds: index * 100),
+            onTap: () => onScenarioSelected?.call(scenario.id),
           ),
-          itemCount: scenarios.length,
-          itemBuilder: (context, index) {
-            return ScenarioCard(
-              scenario: scenarios[index],
-              animationController: cardsController,
-              animationDelay: Duration(milliseconds: index * 100),
-              onTap: () => onScenarioSelected?.call(scenarios[index].id),
-            );
-          },
         );
-      },
+      }).toList(),
     );
-  }
-  
-  int _getCrossAxisCount(double width) {
-    if (width < 600) return 1;  // Mobile
-    if (width < 900) return 2;  // Tablet
-    return 2; // Desktop (keep 2 for this dialog size)
-  }
-  
-  double _getAspectRatio(double width) {
-    if (width < 600) return 1.3;  // Mobile - taller cards
-    return 1.1; // Tablet/Desktop
   }
 } 

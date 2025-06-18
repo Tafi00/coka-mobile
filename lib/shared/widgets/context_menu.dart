@@ -48,6 +48,7 @@ class ContextMenu {
       shadowColor: Colors.black.withValues(alpha: 0.08),
       items: items.map((item) => PopupMenuItem(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        onTap: item.onTap,
         child: Row(
           children: [
             Icon(
@@ -66,7 +67,6 @@ class ContextMenu {
             ),
           ],
         ),
-        onTap: item.onTap,
       )).toList(),
     );
   }

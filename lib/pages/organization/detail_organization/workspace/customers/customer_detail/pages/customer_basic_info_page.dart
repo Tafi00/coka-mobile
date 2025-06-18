@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:io';
 import '../../../../../../../core/theme/app_colors.dart';
 import '../../../../../../../core/utils/helpers.dart';
@@ -18,7 +19,6 @@ import '../../../../../../../shared/widgets/image_viewer_page.dart';
 import '../../../../../../../providers/customer_provider.dart';
 import '../../../../../../../api/repositories/customer_repository.dart';
 import '../../../../../../../api/api_client.dart';
-import '../widgets/customer_menu.dart';
 import '../widgets/assign_to_bottomsheet.dart';
 import 'package:coka/shared/widgets/avatar_widget.dart';
 
@@ -44,7 +44,6 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
   SMIInput<double>? _rating;
   List<Map<String, dynamic>> subPhoneList = [];
   List<Map<String, dynamic>> subEmailList = [];
-  List<Map<String, dynamic>> detailProfileList = [];
   String? fbUrl, zaloUrl;
   final _picker = ImagePicker();
   XFile? _pickedImage;
@@ -81,44 +80,16 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
       for (var x in customerDetail["social"]) {
         if (x["provider"] == "FACEBOOK") {
           fbUrl = x["profileUrl"];
-        } else if (x["provider"] == "ZALO") {
-          zaloUrl = x["profileUrl"];
         }
       }
     }
 
-    // Initialize detail profile list
-    detailProfileList = [
-      if (customerDetail["gender"] != null)
-        {
-          "name": "Giới tính",
-          "value": customerDetail["gender"] == 1
-              ? "Nam"
-              : customerDetail["gender"] == 0
-                  ? "Nữ"
-                  : "Khác"
-        },
-      if (customerDetail["dob"] != null)
-        {
-          "name": "Sinh nhật",
-          "value": DateFormat('dd/MM/yyyy')
-              .format(DateTime.parse(customerDetail["dob"]))
-        },
-      if (customerDetail["physicalId"] != null)
-        {"name": "CMND/CCCD", "value": customerDetail["physicalId"]},
-      if (customerDetail["address"] != null)
-        {"name": "Nơi ở", "value": customerDetail["address"]},
-      if (customerDetail["source"]?.isNotEmpty ?? false) ...[
-        {
-          "name": "Nguồn khách hàng",
-          "value": customerDetail["source"]?.last["utmSource"]
-        },
-        {
-          "name": "Phân loại khách hàng",
-          "value": customerDetail["source"]?.last["sourceName"]
-        },
-      ],
-    ];
+    // Generate Zalo URL from phone number
+    if (customerDetail["phone"] != null) {
+      zaloUrl = "https://zalo.me/${customerDetail["phone"]}";
+    }
+
+
   }
 
   void _onRiveInit(Artboard artboard) {
@@ -326,6 +297,107 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
     }
   }
 
+  List<Map<String, dynamic>> _buildDetailProfileList(Map<String, dynamic> customerData) {
+    return [
+      {
+        "name": "Giới tính",
+        "value": customerData["gender"] != null
+            ? (customerData["gender"] == 1
+                ? "Nam"
+                : customerData["gender"] == 0
+                    ? "Nữ"
+                    : "Khác")
+            : ""
+      },
+      {
+        "name": "Sinh nhật",
+        "value": customerData["dob"] != null
+            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(customerData["dob"]))
+            : ""
+      },
+      {
+        "name": "Nghề nghiệp",
+        "value": customerData["work"] ?? ""
+      },
+      {
+        "name": "Nơi ở",
+        "value": customerData["address"] ?? ""
+      },
+      {
+        "name": "CMND/CCCD",
+        "value": customerData["physicalId"] ?? ""
+      },
+      {
+        "name": "Phân loại khách hàng",
+        "value": customerData["source"]?.isNotEmpty == true
+            ? (customerData["source"]?.last["sourceName"] ?? "")
+            : ""
+      },
+      {
+        "name": "Nguồn khách hàng",
+        "value": customerData["source"]?.isNotEmpty == true
+            ? (customerData["source"]?.last["utmSource"] ?? "")
+            : ""
+      },
+    ];
+  }
+
+  Widget _buildTagsSection(Map<String, dynamic> customerData) {
+    final tags = customerData["tags"] as List<dynamic>? ?? [];
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: CustomContainer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Nhãn",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F2329),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            tags.isEmpty
+                ? const Text(
+                    "Chưa có nhãn phân loại",
+                    style: TextStyle(
+                      color: Color(0xB2000000),
+                      fontSize: 14,
+                    ),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: tags.map<Widget>((tag) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: Text(
+                          tag.toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1F2329),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final customerDetail =
@@ -370,6 +442,22 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
         "onTap": () async {
           if (fbUrl != null) {
             final Uri url = Uri.parse(fbUrl!);
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url);
+            }
+          }
+        }
+      },
+      {
+        "id": "zalo",
+        "icon": SvgPicture.asset(
+          'assets/icons/zalo_icon.svg',
+          width: 25,
+          height: 25,
+        ),
+        "onTap": () async {
+          if (zaloUrl != null) {
+            final Uri url = Uri.parse(zaloUrl!);
             if (await canLaunchUrl(url)) {
               await launchUrl(url);
             }
@@ -716,26 +804,25 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
               ),
             ),
             const Gap(18),
+            _buildTagsSection(customerData),
+            const Gap(18),
             _buildInfoSection(
               title: "Số điện thoại",
               mainValue: customerData["rawPhone"],
               subValues: subPhoneList,
             ),
-            if (customerData["email"] != null) ...[
-              const Gap(18),
-              _buildInfoSection(
-                title: "Email",
-                mainValue: customerData["email"],
-                subValues: subEmailList,
-              ),
-            ],
-            if (detailProfileList.isNotEmpty) ...[
-              const Gap(18),
-              _buildInfoSection(
-                title: "Thông tin khách hàng",
-                items: detailProfileList,
-              ),
-            ],
+            const Gap(18),
+            _buildInfoSection(
+              title: "Email",
+              mainValue: customerData["email"],
+              subValues: subEmailList,
+            ),
+            const Gap(18),
+            _buildInfoSection(
+              title: "Thông tin khách hàng",
+              items: _buildDetailProfileList(customerData),
+              showMainLabel: false,
+            ),
             const SizedBox(height: 100),
           ],
         ),
@@ -767,6 +854,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
     String? mainValue,
     List<Map<String, dynamic>>? subValues,
     List<Map<String, dynamic>>? items,
+    bool showMainLabel = true,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -783,7 +871,7 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
               ),
             ),
             const SizedBox(height: 8),
-            if (mainValue != null)
+            if (mainValue != null && showMainLabel)
               _buildInfoRow(name: "Chính", value: mainValue),
             if (subValues != null)
               ...subValues.map((e) => _buildInfoRow(
@@ -819,6 +907,8 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
     required String name,
     required String value,
   }) {
+    final displayValue = value.isEmpty ? "" : value;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
@@ -834,10 +924,10 @@ class _CustomerBasicInfoPageState extends ConsumerState<CustomerBasicInfoPage> {
               maxWidth: MediaQuery.of(context).size.width - 165,
             ),
             child: SelectableText(
-              value,
+              displayValue,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: displayValue.isEmpty ? const Color(0xB2000000) : Colors.black,
                 fontWeight: FontWeight.w500,
               ),
             ),

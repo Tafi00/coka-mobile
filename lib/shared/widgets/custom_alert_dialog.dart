@@ -195,7 +195,7 @@ void showCustomAlert({
       subtitle: message,
       onSubmit: () {
         Navigator.of(context).pop();
-        if (onConfirm != null) onConfirm!();
+        if (onConfirm != null) onConfirm();
       },
       onCancel: onCancel,
       submitText: confirmText ?? 'OK',

@@ -24,6 +24,7 @@ import 'pages/organization/detail_organization/workspace/customers/customer_deta
 import 'pages/organization/detail_organization/workspace/customers/edit_customer_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/add_customer_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/import_googlesheet_page.dart';
+import 'pages/organization/detail_organization/workspace/reminders/reminder_list_page.dart';
 import 'pages/organization/settings/settings_page.dart';
 import 'pages/organization/notifications/notifications_page.dart';
 
@@ -249,6 +250,20 @@ final appRoutes = [
                     workspaceId: workspaceId,
                     customerId: customerId,
                     customerData: customerDetail,
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'reminders',
+                builder: (context, state) {
+                  final organizationId =
+                      state.pathParameters['organizationId']!;
+                  final workspaceId = state.pathParameters['workspaceId']!;
+                  final customerId = state.pathParameters['customerId']!;
+                  return ReminderListPage(
+                    organizationId: organizationId,
+                    workspaceId: workspaceId,
+                    contactId: customerId,
                   );
                 },
               ),
