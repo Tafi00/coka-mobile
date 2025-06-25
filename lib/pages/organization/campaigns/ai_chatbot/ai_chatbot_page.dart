@@ -125,11 +125,12 @@ class _AIChatbotPageState extends ConsumerState<AIChatbotPage> {
     try {
       final response = await _chatbotRepository.getChatbotList(widget.organizationId);
       
-      if (response['code'] == 0 && response['content'] != null) {
+      if ((response['code'] == 0 || response['code'] == 200) && response['content'] != null) {
         setState(() {
           _chatbotList = (response['content'] as List)
               .map((item) => ChatbotModel.fromJson(item))
               .toList();
+          _errorMessage = ''; // Clear error message khi load thành công
         });
       } else {
         setState(() {
@@ -152,7 +153,7 @@ class _AIChatbotPageState extends ConsumerState<AIChatbotPage> {
         status ? 1 : 0,
       );
 
-      if (response['code'] != 0) {
+      if (response['code'] != 0 && response['code'] != 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response['message'] ?? 'Lỗi không xác định')),
         );
@@ -181,8 +182,12 @@ class _AIChatbotPageState extends ConsumerState<AIChatbotPage> {
           ? _buildLoadingSkeleton()
           : _buildBody(isAdminOrOwner),
       floatingActionButton: isAdminOrOwner ? FloatingActionButton(
-        onPressed: () {
-          context.push('/organization/${widget.organizationId}/campaigns/ai-chatbot/create');
+        onPressed: () async {
+          final result = await context.push('/organization/${widget.organizationId}/campaigns/ai-chatbot/create');
+          // Nếu tạo chatbot thành công, reload danh sách
+          if (result == true) {
+            _loadChatbots();
+          }
         },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),

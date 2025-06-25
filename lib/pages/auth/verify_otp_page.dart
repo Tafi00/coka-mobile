@@ -7,7 +7,7 @@ import 'package:coka/core/theme/app_colors.dart';
 import 'package:coka/api/repositories/auth_repository.dart';
 import 'package:coka/api/api_client.dart';
 import 'package:go_router/go_router.dart';
-
+import '../../core/utils/helpers.dart';
 class VerifyOtpPage extends StatefulWidget {
   final String email;
   final String otpId;
@@ -38,7 +38,7 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
 
       if (!mounted) return;
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         // Lưu token vào secure storage
         await ApiClient.storage.write(
           key: 'access_token',
@@ -87,7 +87,7 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            response['code'] == 0
+            Helpers.isResponseSuccess(response)
                 ? 'Đã gửi lại mã OTP'
                 : (response['message'] ?? 'Không thể gửi lại mã OTP'),
           ),

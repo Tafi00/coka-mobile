@@ -9,7 +9,8 @@ import 'package:coka/providers/organization_provider.dart';
 import 'package:coka/providers/campaign_provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:coka/shared/widgets/custom_alert_dialog.dart';
+import 'package:coka/core/utils/helpers.dart';
 class CampaignsPage extends ConsumerStatefulWidget {
   final String organizationId;
 
@@ -78,7 +79,7 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
     try {
       final authRepository = AuthRepository(ApiClient());
       final response = await authRepository.getUserInfo();
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         setState(() {
           _userInfo = response['content'];
         });
@@ -234,12 +235,12 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
       {
         'title': 'Tổng đài',
         'icon': '${AppConstants.imagePath}/campaign_icon_4.png',
-        'onTap': () {/* Xử lý khi chọn tính năng */},
+        'onTap': () => _showFeatureComingSoonDialog('Tổng đài'),
       },
       {
         'title': 'Gọi hàng loạt',
         'icon': '${AppConstants.imagePath}/campaign_icon_5.png',
-        'onTap': () {/* Xử lý khi chọn tính năng */},
+        'onTap': () => _showFeatureComingSoonDialog('Gọi hàng loạt'),
       },
     ];
 
@@ -458,6 +459,15 @@ class _CampaignsPageState extends ConsumerState<CampaignsPage> {
           ),
         );
       },
+    );
+  }
+
+  void _showFeatureComingSoonDialog(String featureName) {
+    showInfoAlert(
+      context: context,
+      title: '$featureName đang phát triển',
+      message: 'Tính năng này đang được phát triển trên ứng dụng di động.\n'
+          'Vui lòng truy cập bản website tại app.coka.ai để sử dụng tính năng này.',
     );
   }
 

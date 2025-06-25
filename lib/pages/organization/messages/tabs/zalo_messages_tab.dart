@@ -119,7 +119,7 @@ class _ZaloMessagesTabState extends ConsumerState<ZaloMessagesTab>
             content: conversation.snippet,
             time: conversation.updatedTime.toIso8601String(),
             platform: conversation.provider,
-            avatar: conversation.personAvatar,
+            avatar: conversation.avatar,
             pageAvatar: conversation.pageAvatar,
           );
         },

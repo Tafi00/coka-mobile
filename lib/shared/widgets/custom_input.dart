@@ -10,7 +10,7 @@ class CustomInput extends StatelessWidget {
   final TextInputType keyboardType;
 
   const CustomInput({
-    Key? key,
+    super.key,
     this.label,
     required this.placeholder,
     this.value,
@@ -18,7 +18,7 @@ class CustomInput extends StatelessWidget {
     this.isRequired = false,
     this.maxLines = 1,
     this.keyboardType = TextInputType.text,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

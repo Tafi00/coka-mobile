@@ -268,13 +268,16 @@ class OrganizationDrawer extends StatelessWidget {
                           thickness: 0,
                           height: 1,
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.logout,
-                              color: AppColors.primary),
-                          title: const Text('Đăng xuất'),
-                          dense: true,
-                          visualDensity: const VisualDensity(vertical: -1.0),
-                          onTap: onLogout,
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: ListTile(
+                            leading: const Icon(Icons.logout,
+                                color: AppColors.primary),
+                            title: const Text('Đăng xuất'),
+                            dense: true,
+                            visualDensity: const VisualDensity(vertical: -1.0),
+                            onTap: onLogout,
+                          ),
                         ),
                       ],
                     ),

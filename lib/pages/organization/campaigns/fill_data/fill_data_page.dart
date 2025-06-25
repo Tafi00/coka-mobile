@@ -69,39 +69,40 @@ class _FillDataPageState extends ConsumerState<FillDataPage> {
 
     if (state.error != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Đã xảy ra lỗi',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red,
               ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
+              const SizedBox(height: 16),
+              const Text(
+                'Đã xảy ra lỗi',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
                 state.error!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14),
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(fillDataProvider.notifier).refresh(widget.organizationId);
-              },
-              child: const Text('Thử lại'),
-            ),
-          ],
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(fillDataProvider.notifier).refresh(widget.organizationId);
+                },
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -197,62 +198,67 @@ class WorkspaceItemCard extends ConsumerWidget {
                   color: Colors.black87,
                 ),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
               const SizedBox(height: 6),
-              Row(
-                children: [
-                  if (data.packageName != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE3DFFF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        data.packageName!,
-                        style: const TextStyle(
-                          color: Colors.purple,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    if (data.packageName != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3DFFF),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(data.statusName),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          data.statusName,
+                        child: Text(
+                          data.packageName!,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: Colors.purple,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(data.statusName),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            data.statusName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
         ),
+        const SizedBox(width: 8),
         Switch(
           value: data.isActive,
           onChanged: (checked) => _onSwitchChanged(context, ref, checked),
@@ -367,6 +373,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   @override
   Widget build(BuildContext context) {
     final paymentState = ref.watch(paymentProvider);
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.height < 700;
+    final isVerySmallScreen = screenSize.height < 600;
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -374,11 +383,16 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       ),
       elevation: 8,
       clipBehavior: Clip.antiAlias,
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
       child: Container(
         width: double.infinity,
-        constraints: const BoxConstraints(
-          maxHeight: 690,
+        constraints: BoxConstraints(
+          maxHeight: isVerySmallScreen 
+            ? screenSize.height * 0.85 
+            : isSmallScreen 
+              ? screenSize.height * 0.9 
+              : 690,
+          maxWidth: 500,
         ),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -389,7 +403,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isVerySmallScreen ? 16 : 20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border(
@@ -411,11 +425,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Kích hoạt workspace',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: isVerySmallScreen ? 16 : 18,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
@@ -436,47 +450,83 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             ),
             // Content
             Flexible(
-              child: _buildDialogContent(paymentState),
+              child: _buildDialogContent(paymentState, isVerySmallScreen),
             ),
             // Footer
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isVerySmallScreen ? 16 : 20),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
                 border: Border(
                   top: BorderSide(color: Colors.grey[200]!, width: 1),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey[600],
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                    child: const Text('Hủy'),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: paymentState.canPay ? () => _processPayment() : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              child: isVerySmallScreen 
+                ? Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: paymentState.canPay ? () => _processPayment() : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            'Hoàn tất thanh toán',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Hoàn tất thanh toán',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey[600],
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          child: const Text('Hủy'),
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey[600],
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        child: const Text('Hủy'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: paymentState.canPay ? () => _processPayment() : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Hoàn tất thanh toán',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
             ),
           ],
         ),
@@ -484,11 +534,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildDialogContent(PaymentState state) {
+  Widget _buildDialogContent(PaymentState state, bool isVerySmallScreen) {
     if (state.isLoading) {
-      return const Padding(
-        padding: EdgeInsets.all(40),
-        child: Center(
+      return Padding(
+        padding: EdgeInsets.all(isVerySmallScreen ? 20 : 40),
+        child: const Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
@@ -497,26 +547,26 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isVerySmallScreen ? 12 : 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Package selection
-          _buildPackageSelection(state),
-          const SizedBox(height: 20),
+          _buildPackageSelection(state, isVerySmallScreen),
+          const SizedBox(height: 16),
           // Payment method
-          _buildPaymentMethod(state),
-          const SizedBox(height: 20),
+          _buildPaymentMethod(state, isVerySmallScreen),
+          const SizedBox(height: 16),
           // Order summary
-          _buildOrderSummary(state),
+          _buildOrderSummary(state, isVerySmallScreen),
         ],
       ),
     );
   }
 
-  Widget _buildPackageSelection(PaymentState state) {
+  Widget _buildPackageSelection(PaymentState state, bool isVerySmallScreen) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
@@ -533,36 +583,38 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 color: Colors.grey[700],
               ),
               const SizedBox(width: 8),
-              Text(
-                'Chọn gói thuê bao',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+              Expanded(
+                child: Text(
+                  'Chọn gói thuê bao',
+                  style: TextStyle(
+                    fontSize: isVerySmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          ...state.packages.map((package) => _buildPackageOption(package)),
+          SizedBox(height: isVerySmallScreen ? 12 : 16),
+          ...state.packages.map((package) => _buildPackageOption(package, isVerySmallScreen)),
         ],
       ),
     );
   }
 
-  Widget _buildPackageOption(PackageData package) {
+  Widget _buildPackageOption(PackageData package, bool isVerySmallScreen) {
     final paymentState = ref.watch(paymentProvider);
     bool isSelected = paymentState.selectedPackage?.id == package.id;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: isVerySmallScreen ? 8 : 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => ref.read(paymentProvider.notifier).selectPackage(package),
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
             decoration: BoxDecoration(
               color: isSelected ? AppColors.backgroundSecondary : Colors.white,
               border: Border.all(
@@ -601,16 +653,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                         package.description,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                          fontSize: isVerySmallScreen ? 13 : 15,
                           color: isSelected ? AppColors.primary : Colors.black87,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${package.formattedPrice} Coin',
                         style: TextStyle(
                           color: isSelected ? AppColors.primary : Colors.grey[600],
-                          fontSize: 14,
+                          fontSize: isVerySmallScreen ? 12 : 14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -631,9 +685,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildPaymentMethod(PaymentState state) {
+  Widget _buildPaymentMethod(PaymentState state, bool isVerySmallScreen) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
@@ -650,19 +704,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 color: Colors.grey[700],
               ),
               const SizedBox(width: 8),
-              Text(
-                'Phương thức thanh toán',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+              Expanded(
+                child: Text(
+                  'Phương thức thanh toán',
+                  style: TextStyle(
+                    fontSize: isVerySmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isVerySmallScreen ? 12 : 16),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -671,15 +727,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: isVerySmallScreen ? 36 : 40,
+                  height: isVerySmallScreen ? 36 : 40,
                   decoration: BoxDecoration(
                     color: AppColors.backgroundSecondary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.account_balance_wallet,
-                    size: 20,
+                    size: isVerySmallScreen ? 18 : 20,
                     color: AppColors.primary,
                   ),
                 ),
@@ -688,14 +744,20 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Ví coka',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: isVerySmallScreen ? 13 : 15, 
+                          fontWeight: FontWeight.w600
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Số dư ví: ${state.walletInfo?.formattedCredit ?? '0'} Coin',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: isVerySmallScreen ? 11 : 13, 
+                          color: Colors.grey[600]
+                        ),
                       ),
                     ],
                   ),
@@ -712,12 +774,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isVerySmallScreen ? 12 : 16, 
+                        vertical: isVerySmallScreen ? 6 : 8
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Nạp tiền', style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'Nạp tiền', 
+                      style: TextStyle(fontSize: isVerySmallScreen ? 11 : 12)
+                    ),
                   ),
               ],
             ),
@@ -727,11 +795,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildOrderSummary(PaymentState state) {
+  Widget _buildOrderSummary(PaymentState state, bool isVerySmallScreen) {
     if (state.selectedPackage == null) return const SizedBox();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
@@ -748,19 +816,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 color: Colors.grey[700],
               ),
               const SizedBox(width: 8),
-              Text(
-                'Chi tiết đơn hàng',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+              Expanded(
+                child: Text(
+                  'Chi tiết đơn hàng',
+                  style: TextStyle(
+                    fontSize: isVerySmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isVerySmallScreen ? 12 : 16),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -768,11 +838,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             ),
             child: Column(
               children: [
-                _buildSummaryRow('Tên gói', state.selectedPackage!.description),
-                _buildSummaryRow('Giá', '${state.selectedPackage!.formattedPrice} Coin'),
-                _buildSummaryRow('Phí', 'Miễn phí'),
-                Divider(color: Colors.grey[300], height: 24),
-                _buildSummaryRow('Tổng cộng', '${state.selectedPackage!.formattedPrice} Coin', isTotal: true),
+                _buildSummaryRow('Tên gói', state.selectedPackage!.description, isVerySmallScreen),
+                _buildSummaryRow('Giá', '${state.selectedPackage!.formattedPrice} Coin', isVerySmallScreen),
+                _buildSummaryRow('Phí', 'Miễn phí', isVerySmallScreen),
+                Divider(color: Colors.grey[300], height: isVerySmallScreen ? 20 : 24),
+                _buildSummaryRow('Tổng cộng', '${state.selectedPackage!.formattedPrice} Coin', isVerySmallScreen, isTotal: true),
               ],
             ),
           ),
@@ -781,24 +851,30 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildSummaryRow(String label, String value, bool isVerySmallScreen, {bool isTotal = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: isVerySmallScreen ? 4 : 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
-              color: isTotal ? Colors.black87 : Colors.grey[700],
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: isVerySmallScreen 
+                  ? (isTotal ? 14 : 12) 
+                  : (isTotal ? 16 : 14),
+                fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
+                color: isTotal ? Colors.black87 : Colors.grey[700],
+              ),
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
+              fontSize: isVerySmallScreen 
+                ? (isTotal ? 14 : 12) 
+                : (isTotal ? 16 : 14),
               fontWeight: FontWeight.w600,
               color: isTotal ? AppColors.primary : Colors.black87,
             ),
@@ -832,11 +908,13 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Xác nhận thanh toán',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+            const Expanded(
+              child: Text(
+                'Xác nhận thanh toán',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

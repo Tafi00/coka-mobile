@@ -89,6 +89,9 @@ class Conversation {
   final String? assignName;
   final String? assignAvatar;
 
+  // Getter để đơn giản hóa việc lấy avatar
+  String? get avatar => personAvatar;
+
   Conversation({
     required this.id,
     required this.pageId,

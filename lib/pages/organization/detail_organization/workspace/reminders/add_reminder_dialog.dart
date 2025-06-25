@@ -28,6 +28,7 @@ class AddReminderDialog extends ConsumerStatefulWidget {
 
 class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   
@@ -167,6 +168,17 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
     }
   }
 
+  void _scrollToNotificationSection() {
+    // Scroll to bottom where notification section is located
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   void _addNotification() {
     setState(() {
       final newId = _notifyBeforeList.isNotEmpty 
@@ -174,6 +186,22 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
           : 1;
       _notifyBeforeList.add({'id': newId, 'hour': 0, 'minute': 30});
     });
+    
+    // Auto scroll to notification section after adding
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToNotificationSection();
+    });
+    
+    // Show feedback to user
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã thêm thông báo mới'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(bottom: 60, left: 16, right: 16),
+      ),
+    );
   }
 
   void _updateNotification(int id, String field, int value) {
@@ -250,6 +278,22 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
               : 1;
           _notifyBeforeList.add({'id': newId, 'hour': hour, 'minute': minute});
         });
+        
+        // Auto scroll to notification section after adding
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToNotificationSection();
+        });
+        
+        // Show feedback to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã thêm thông báo $label'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 60, left: 16, right: 16),
+          ),
+        );
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -322,6 +366,7 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
               child: Container(
                 color: Colors.white,
                 child: SingleChildScrollView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.all(16),
                   child: Form(
                     key: _formKey,
@@ -743,6 +788,38 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
                                   _buildQuickSelectChip('1 giờ', 1, 0),
                                   _buildQuickSelectChip('2 giờ', 2, 0),
                                   _buildQuickSelectChip('1 ngày', 24, 0),
+                                  // Add notification button
+                                  InkWell(
+                                    onTap: _addNotification,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4F46E5).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: const Color(0xFF4F46E5)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.add,
+                                            size: 16,
+                                            color: Color(0xFF4F46E5),
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'Thêm',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF4F46E5),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -753,7 +830,9 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
                                   child: SingleChildScrollView(
                                     child: Column(
                                       children: _notifyBeforeList.map((notify) {
-                                        return Container(
+                                        return AnimatedContainer(
+                                          duration: const Duration(milliseconds: 300),
+                                          curve: Curves.easeInOut,
                                           margin: const EdgeInsets.only(bottom: 8),
                                           child: Row(
                                             children: [
@@ -1172,6 +1251,7 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 } 

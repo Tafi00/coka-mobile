@@ -39,7 +39,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   Future<void> _loadUserInfo() async {
     try {
       final response = await _authRepository.getUserInfo();
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         final metadata = response['content'];
         setState(() {
           _nameController.text = metadata['fullName'] ?? '';
@@ -104,7 +104,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
       if (!mounted) return;
       
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         showCustomAlert(
           context: context,
           title: 'Thành công',

@@ -7,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../../api/repositories/workspace_repository.dart';
 import '../../../../../api/api_client.dart';
 import '../../../../../shared/widgets/workspace_list_modal.dart';
+import '../../../../../shared/widgets/dropdown_button_widget.dart';
 import '../../../../../core/theme/app_colors.dart';
 import 'dart:developer' as developer;
 import 'dart:async';
@@ -17,6 +18,7 @@ import '../../../../../api/repositories/report_repository.dart';
 import '../../../../../core/utils/helpers.dart';
 import 'widgets/import_contact_bottomsheet.dart';
 import 'package:collection/collection.dart';
+import 'package:intl/intl.dart';
 
 class CustomersPage extends StatefulWidget {
   final String organizationId;
@@ -340,24 +342,13 @@ class _CustomersPageState extends State<CustomersPage>
       );
     }
 
-    return InkWell(
+    return StandardDropdownButton(
+      text: _currentWorkspace?['name'] ?? 'Không có tên',
       onTap: _showWorkspaceList,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              _currentWorkspace?['name'] ?? 'Không có tên',
-              style: const TextStyle(fontSize: 16),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const Icon(
-            Icons.arrow_drop_down,
-            size: 24,
-          ),
-        ],
-      ),
+      isEnabled: !_isLoading,
+      iconSize: 24,
+      spaceBetweenTextAndIcon: 4,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
     );
   }
 
@@ -527,6 +518,256 @@ class _CustomersPageState extends State<CustomersPage>
     return _mapEquality.equals(map1, map2);
   }
 
+  void _clearAllFilters() {
+    setState(() {
+      _currentFilter = null;
+    });
+    _fetchCustomerCounts();
+  }
+
+  Widget _buildActiveFiltersBar() {
+    if (_currentFilter == null || !_currentFilter!.hasActiveFilters) {
+      return const SizedBox.shrink();
+    }
+
+    List<Widget> filterChips = [];
+
+    // Date range filter
+    if (_currentFilter!.dateRange != null) {
+      final dateFormat = DateFormat('dd/MM/yyyy');
+      final startDate = dateFormat.format(_currentFilter!.dateRange!.start);
+      final endDate = dateFormat.format(_currentFilter!.dateRange!.end);
+      filterChips.add(_buildFilterChip(
+        'Từ $startDate đến $endDate',
+        () {
+          setState(() {
+            _currentFilter = FilterResult(
+              assignees: _currentFilter!.assignees,
+              categories: _currentFilter!.categories,
+              sources: _currentFilter!.sources,
+              tags: _currentFilter!.tags,
+              ratings: _currentFilter!.ratings,
+              dateRange: null,
+            );
+          });
+          _fetchCustomerCounts();
+        },
+      ));
+    }
+
+    // Categories
+    for (var category in _currentFilter!.categories) {
+      filterChips.add(_buildFilterChip(
+        'Danh mục: ${category.name}',
+        () {
+          setState(() {
+            final newCategories = List<Category>.from(_currentFilter!.categories);
+            newCategories.remove(category);
+            _currentFilter = FilterResult(
+              assignees: _currentFilter!.assignees,
+              categories: newCategories,
+              sources: _currentFilter!.sources,
+              tags: _currentFilter!.tags,
+              ratings: _currentFilter!.ratings,
+              dateRange: _currentFilter!.dateRange,
+            );
+          });
+          _fetchCustomerCounts();
+        },
+      ));
+    }
+
+    // Sources
+    for (var source in _currentFilter!.sources) {
+      filterChips.add(_buildFilterChip(
+        'Nguồn: ${source.name}',
+        () {
+          setState(() {
+            final newSources = List<Source>.from(_currentFilter!.sources);
+            newSources.remove(source);
+            _currentFilter = FilterResult(
+              assignees: _currentFilter!.assignees,
+              categories: _currentFilter!.categories,
+              sources: newSources,
+              tags: _currentFilter!.tags,
+              ratings: _currentFilter!.ratings,
+              dateRange: _currentFilter!.dateRange,
+            );
+          });
+          _fetchCustomerCounts();
+        },
+      ));
+    }
+
+    // Ratings
+    for (var rating in _currentFilter!.ratings) {
+      filterChips.add(_buildFilterChip(
+        'Đánh giá: ${rating.name}',
+        () {
+          setState(() {
+            final newRatings = List<Rating>.from(_currentFilter!.ratings);
+            newRatings.remove(rating);
+            _currentFilter = FilterResult(
+              assignees: _currentFilter!.assignees,
+              categories: _currentFilter!.categories,
+              sources: _currentFilter!.sources,
+              tags: _currentFilter!.tags,
+              ratings: newRatings,
+              dateRange: _currentFilter!.dateRange,
+            );
+          });
+          _fetchCustomerCounts();
+        },
+      ));
+    }
+
+    // Tags
+    for (var tag in _currentFilter!.tags) {
+      filterChips.add(_buildFilterChip(
+        'Tag: ${tag.name}',
+        () {
+          setState(() {
+            final newTags = List<Tag>.from(_currentFilter!.tags);
+            newTags.remove(tag);
+            _currentFilter = FilterResult(
+              assignees: _currentFilter!.assignees,
+              categories: _currentFilter!.categories,
+              sources: _currentFilter!.sources,
+              tags: newTags,
+              ratings: _currentFilter!.ratings,
+              dateRange: _currentFilter!.dateRange,
+            );
+          });
+          _fetchCustomerCounts();
+        },
+      ));
+    }
+
+    // Assignees - gộp tất cả thành 1 badge
+    if (_currentFilter!.assignees.isNotEmpty) {
+      final assigneeNames = _currentFilter!.assignees.map((assignee) => assignee.name).join(', ');
+      filterChips.add(_buildFilterChip(
+        'Phụ trách: $assigneeNames',
+        () {
+          setState(() {
+            _currentFilter = FilterResult(
+              assignees: [],
+              categories: _currentFilter!.categories,
+              sources: _currentFilter!.sources,
+              tags: _currentFilter!.tags,
+              ratings: _currentFilter!.ratings,
+              dateRange: _currentFilter!.dateRange,
+            );
+          });
+          _fetchCustomerCounts();
+        },
+      ));
+    }
+
+    return Column(
+      children: [
+        const Divider(
+          thickness: 0.2,
+          height: 1,
+          color: Color(0xFFE5E7EB),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Bộ lọc đang áp dụng:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _clearAllFilters,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Xóa tất cả',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 28,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (int i = 0; i < filterChips.length; i++) ...[
+                        filterChips[i],
+                        if (i < filterChips.length - 1) const SizedBox(width: 8),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, VoidCallback onRemove) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(10),
+            child: const Icon(
+              Icons.close,
+              size: 14,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -539,7 +780,7 @@ class _CustomersPageState extends State<CustomersPage>
           centerTitle: true,
           title: _buildTitle(),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(100),
+            preferredSize: Size.fromHeight(_currentFilter?.hasActiveFilters == true ? 145 : 100),
             child: Column(
               children: [
                 const Divider(
@@ -548,6 +789,7 @@ class _CustomersPageState extends State<CustomersPage>
                 ),
                 _buildTabBar(),
                 _buildSearchBar(),
+                _buildActiveFiltersBar(),
               ],
             ),
           ),

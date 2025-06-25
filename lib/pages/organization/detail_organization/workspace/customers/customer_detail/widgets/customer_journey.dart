@@ -160,23 +160,27 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Wrap(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Center(
-                  child: Text(
-                    "Phương thức gọi",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      builder: (context) => Container(
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 60, // Đưa menu cao hơn
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0), // Tăng padding
+          child: Wrap(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Center(
+                    child: Text(
+                      "Phương thức gọi",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    GestureDetector(
+                  const SizedBox(height: 20), // Tăng khoảng cách
+                  // Chỉ hiển thị gọi mặc định, ẩn tổng đài Coka
+                  Center(
+                    child: GestureDetector(
                       onTap: () async {
                         final customerData = customerState.value;
                         if (customerData != null) {
@@ -199,53 +203,34 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
-                            width: 55,
-                            height: 55,
+                            width: 60,
+                            height: 60,
                             decoration: BoxDecoration(
                               color: const Color(0xFF43B41F),
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Center(
                               child: Icon(Icons.call,
-                                  color: Colors.white, size: 30),
+                                  color: Colors.white, size: 32),
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          const Text("Mặc định"),
+                          const SizedBox(height: 8),
+                          const Text(
+                            "Gọi điện",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    GestureDetector(
-                      onTap: () {
-                        // TODO: Implement call center call
-                        Navigator.pop(context);
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 55,
-                            height: 55,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1EEFF),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Center(
-                              child: SvgPicture.asset("assets/icons/logo.svg"),
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          const Text("Tổng đài"),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                  ),
+                  const SizedBox(height: 16), // Thêm khoảng cách cuối
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -289,8 +274,8 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.only(
                   bottom: _isInputFocused 
-                    ? 200  // Để đủ space cho stage select + input + keyboard
-                    : 100, // Để đủ space cho input khi không focus
+                    ? 240  // Để đủ space cho stage select + input + keyboard
+                    : 140, // Để đủ space cho input khi không focus (tăng lên để input cao hơn)
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,8 +446,18 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
               ),
             ),
           ),
+          // Background trắng che phần trống 20px ở dưới
           Positioned(
-            bottom: viewInsets.bottom,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: viewInsets.bottom + 20,
+            child: Container(
+              color: Colors.white,
+            ),
+          ),
+          Positioned(
+            bottom: viewInsets.bottom + 20, // Đưa input lên cao hơn 20px
             left: 0,
             right: 0,
             child: Column(
@@ -488,10 +483,9 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                   Divider(height: 1, color: Colors.black.withValues(alpha: 0.1)),
                 Container(
                   color: Colors.white,
-                  padding: const EdgeInsets.only(top: 6, bottom: 10),
+                  padding: const EdgeInsets.only(top: 8, bottom: 12, left: 16, right: 8), // Điều chỉnh padding
                   child: Row(
                     children: [
-                      const SizedBox(width: 16),
                       Expanded(
                         child: TextFormField(
                           focusNode: _focusNode,
@@ -523,8 +517,15 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                           ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () async {
+                      Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8), // Thêm margin để cách lề phải
+                        child: IconButton(
+                          padding: const EdgeInsets.all(8), // Giảm padding để nút gọn hơn
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ), // Giảm kích thước tối thiểu
+                          onPressed: () async {
                           if (!_isInputFocused) {
                             _showCallMethodBottomSheet();
                           } else {
@@ -602,15 +603,16 @@ class _CustomerJourneyState extends ConsumerState<CustomerJourney>
                                   color: const Color(0xFF5C33F0),
                                 ),
                         ),
-                      ),
-                    ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    }
   }
-}

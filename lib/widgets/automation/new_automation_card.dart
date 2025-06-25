@@ -34,39 +34,39 @@ class NewAutomationCard extends StatelessWidget {
       isActive: isActive,
       onTap: onTap,
       onDelete: onDelete,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row: Badge + Icons + Switch
-          Row(
-            children: [
-              AutomationBadge(
-                type: type == 'reminder' 
-                    ? AutomationBadgeType.reminder 
-                    : AutomationBadgeType.recall,
-                isActive: isActive,
-              ),
-              const SizedBox(width: 8),
-              _FeatureIcons(
-                hasWorkingHours: _hasWorkingHours(),
-                hasRepeat: _hasRepeat(),
-                isActive: isActive,
-              ),
-              const Spacer(),
-              AutomationSwitch(
-                value: isActive,
-                onChanged: onToggle != null ? (_) => onToggle!() : null,
-                isActive: isActive,
-                isLoading: isLoading,
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 6),
-          
-          // Content Area
-          Expanded(
-            child: Column(
+      child: IntrinsicHeight(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row: Badge + Icons + Switch
+            Row(
+              children: [
+                AutomationBadge(
+                  type: type == 'reminder' 
+                      ? AutomationBadgeType.reminder 
+                      : AutomationBadgeType.recall,
+                  isActive: isActive,
+                ),
+                const SizedBox(width: 8),
+                _FeatureIcons(
+                  hasWorkingHours: _hasWorkingHours(),
+                  hasRepeat: _hasRepeat(),
+                  isActive: isActive,
+                ),
+                const Spacer(),
+                AutomationSwitch(
+                  value: isActive,
+                  onChanged: onToggle != null ? (_) => onToggle!() : null,
+                  isActive: isActive,
+                  isLoading: isLoading,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 6),
+            
+            // Content Area - Remove Expanded to prevent overflow
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title and description based on type
@@ -98,21 +98,19 @@ class NewAutomationCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 
-                const Spacer(),
-                
-                // Statistics (show at bottom)
-                if (statistics.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: StatisticsRow(
-                      statistics: statistics,
-                      isActive: isActive,
-                    ),
+                // Statistics with fixed spacing
+                if (statistics.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  StatisticsRow(
+                    statistics: statistics,
+                    isActive: isActive,
                   ),
+                ] else
+                  const SizedBox(height: 4), // Small spacer when no statistics
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

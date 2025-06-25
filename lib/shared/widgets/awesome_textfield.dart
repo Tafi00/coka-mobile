@@ -55,7 +55,8 @@ class AwesomeTextField extends StatelessWidget {
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                         color: Color(0xFF1A1C1E))),
-                                const Icon(Icons.arrow_drop_down),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.keyboard_arrow_down, size: 16),
                                 Container(
                                   height: 20,
                                   width: 1,

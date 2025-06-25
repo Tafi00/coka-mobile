@@ -5,7 +5,7 @@ import 'package:coka/core/theme/app_colors.dart';
 import 'package:coka/api/providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
+import 'package:coka/core/utils/helpers.dart';
 class TiktokConfigPage extends ConsumerStatefulWidget {
   final String organizationId;
   final String workspaceId;
@@ -68,7 +68,7 @@ class _TiktokConfigPageState extends ConsumerState<TiktokConfigPage> {
         "TIKTOK"
       );
       
-      if (response['code'] == 0 && response['content'] != null) {
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         setState(() {
           tiktokAccounts = response['content'];
         });
@@ -104,7 +104,7 @@ class _TiktokConfigPageState extends ConsumerState<TiktokConfigPage> {
         false
       );
       
-      if (response['code'] == 0 && response['content'] != null) {
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         setState(() {
           tiktokForms = response['content'];
         });
@@ -140,7 +140,7 @@ class _TiktokConfigPageState extends ConsumerState<TiktokConfigPage> {
         form['pageId']
       );
       
-      if (response['code'] == 0 && response['content'] != null) {
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         final content = response['content'];
         
         if (content['mappingField'] != null && content['mappingField'].isNotEmpty) {
@@ -222,7 +222,7 @@ class _TiktokConfigPageState extends ConsumerState<TiktokConfigPage> {
         formData
       );
       
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Tạo kết nối form thành công'),

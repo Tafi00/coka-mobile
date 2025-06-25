@@ -302,6 +302,11 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
         });
       }
 
+      // Trigger refresh cho customers list
+      ref
+          .read(customerListRefreshProvider.notifier)
+          .notifyCustomerListChanged();
+
       // Navigate back
       context.pop();
 
@@ -774,7 +779,7 @@ class _EditCustomerPageState extends ConsumerState<EditCustomerPage> {
                     name: "Nguồn khách hàng",
                     nameHolder: "Chọn nguồn",
                     isEditAble: false,
-                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                    suffixIcon: const Icon(Icons.keyboard_arrow_down, size: 20),
                   ),
                 ),
               ),

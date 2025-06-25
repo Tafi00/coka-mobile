@@ -389,8 +389,8 @@ class _OrganizationPageState extends State<OrganizationPage> {
                 ),
                 if (_unreadNotificationCount > 0)
                   Positioned(
-                    right: -3,
-                    bottom: 0,
+                    right: 0,
+                    top: 2,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       decoration: BoxDecoration(
@@ -399,8 +399,8 @@ class _OrganizationPageState extends State<OrganizationPage> {
                         border: Border.all(color: Colors.white, width: 1),
                       ),
                       constraints: const BoxConstraints(
-                        minWidth: 14,
-                        minHeight: 14,
+                        minWidth: 16,
+                        minHeight: 16,
                       ),
                       child: Text(
                         _unreadNotificationCount > 99 ? '99+' : _unreadNotificationCount.toString(),

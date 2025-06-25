@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:coka/api/repositories/organization_repository.dart';
 import 'package:coka/api/api_client.dart';
+import 'package:coka/core/theme/app_colors.dart';
 import 'package:coka/shared/widgets/custom_input.dart';
 import 'package:coka/shared/widgets/avatar_picker_widget.dart';
+import 'package:coka/core/utils/helpers.dart';
 import 'dart:io';
 
 class CreateOrganizationPage extends StatefulWidget {
@@ -77,7 +79,9 @@ class _CreateOrganizationPageState extends State<CreateOrganizationPage> {
 
       if (!mounted) return;
 
-      if (response['code'] == 0) {
+      print('Create organization response: $response');
+
+      if (Helpers.isResponseSuccess(response)) {
         final organizationId = response['content']['id'];
         _showSnackBar('Bạn đã tạo tổ chức $_name thành công');
         
@@ -88,11 +92,23 @@ class _CreateOrganizationPageState extends State<CreateOrganizationPage> {
           }
         });
       } else {
-        _showSnackBar(response['message'] ?? 'Tạo tổ chức thất bại');
+        // Hiển thị thông báo lỗi từ API
+        final errorMessage = response['message'] ?? 'Tạo tổ chức thất bại';
+        _showSnackBar(errorMessage);
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('Có lỗi xảy ra khi tạo tổ chức: $e');
+        String errorMessage = 'Có lỗi xảy ra khi tạo tổ chức';
+        
+        // Xử lý DioException để lấy response error
+        if (e is DioException && e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData is Map<String, dynamic> && responseData['message'] != null) {
+            errorMessage = responseData['message'];
+          }
+        }
+        
+        _showSnackBar(errorMessage);
       }
     } finally {
       if (mounted) {
@@ -221,7 +237,7 @@ class _CreateOrganizationPageState extends State<CreateOrganizationPage> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleSubmit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007BFF),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

@@ -4,7 +4,7 @@ import 'package:coka/core/theme/app_colors.dart';
 import 'package:coka/models/lead/connection_model.dart';
 import 'package:coka/api/providers.dart';
 import 'package:coka/providers/app_providers.dart';
-
+import 'package:coka/core/utils/helpers.dart';
 class FieldMapping {
   String? tiktokFieldId;
   String? tiktokFieldTitle;
@@ -156,7 +156,7 @@ class _EditTiktokPageState extends ConsumerState<EditTiktokPage> {
 
       print("API response: $response");
 
-      if (response['code'] == 0 && response['content'] != null) {
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         final content = response['content'];
         if (content['mappingField'] != null && content['mappingField'].isNotEmpty) {
           final List<dynamic> mappingFields = content['mappingField'];
@@ -303,7 +303,7 @@ class _EditTiktokPageState extends ConsumerState<EditTiktokPage> {
 
       print("Update API response: $response");
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -553,7 +553,7 @@ class _EditTiktokPageState extends ConsumerState<EditTiktokPage> {
               ),
               value: isValidValue ? currentValue : null,
               isExpanded: true,
-              icon: const Icon(Icons.arrow_drop_down),
+                              icon: const Icon(Icons.keyboard_arrow_down, size: 20),
               items: cokaFieldMenu.map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,

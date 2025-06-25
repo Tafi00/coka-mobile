@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 
 import '../../../../../api/repositories/customer_repository.dart';
+import '../../../../../api/repositories/workspace_repository.dart';
 import '../../../../../api/api_client.dart';
 import '../../../../../providers/customer_provider.dart';
 import '../../../../../shared/widgets/chip_input.dart';
@@ -16,27 +17,7 @@ import '../../../../../shared/widgets/radio_gender.dart';
 import '../../../../../shared/widgets/border_textfield.dart';
 import '../../../../../shared/widgets/awesome_textfield.dart';
 import '../../../../../shared/widgets/avatar_widget.dart';
-
-const customerSourceList = [
-  "Khách cũ",
-  "Được giới thiệu",
-  "Trực tiếp",
-  "Hotline",
-  "Google",
-  "Facebook",
-  "Zalo",
-  "Tiktok",
-  "Khác"
-];
-
-const tagMenu = <ChipData>[
-  ChipData('Mua để ở', 'Mua để ở'),
-  ChipData('Mua đầu tư', 'Mua đầu tư'),
-  ChipData('Cho thuê', 'Cho thuê'),
-  ChipData('Cần thuê', 'Cần thuê'),
-  ChipData('Cần bán', 'Cần bán'),
-  ChipData('Chuyển nhượng', 'Chuyển nhượng'),
-];
+import '../../../../../core/utils/helpers.dart';
 
 class AddCustomerPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -55,6 +36,7 @@ class AddCustomerPage extends ConsumerStatefulWidget {
 class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
   final _formKey = GlobalKey<FormState>();
   final _customerRepository = CustomerRepository(ApiClient());
+  final _workspaceRepository = WorkspaceRepository(ApiClient());
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -77,6 +59,115 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
   int? _gender;
   final _picker = ImagePicker();
   XFile? _pickedImage;
+
+  // Add state for API data
+  List<String> _customerSourceList = [];
+  List<ChipData> _tagMenu = [];
+  bool _isLoadingSources = true;
+  bool _isLoadingTags = true;
+  
+  // Default fallback data
+  static const List<String> _defaultSources = [
+    "Khách cũ",
+    "Được giới thiệu", 
+    "Trực tiếp",
+    "Hotline",
+    "Google",
+    "Facebook",
+    "Zalo",
+    "Tiktok",
+    "Khác"
+  ];
+  
+  static const List<ChipData> _defaultTags = [
+    ChipData('Mua để ở', 'Mua để ở'),
+    ChipData('Mua đầu tư', 'Mua đầu tư'),
+    ChipData('Cho thuê', 'Cho thuê'),
+    ChipData('Cần thuê', 'Cần thuê'),
+    ChipData('Cần bán', 'Cần bán'),
+    ChipData('Chuyển nhượng', 'Chuyển nhượng'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSourcesAndTags();
+  }
+
+  // Add method to load sources and tags from API
+  Future<void> _loadSourcesAndTags() async {
+    try {
+      // Load sources
+      final sourcesResponse = await _workspaceRepository.getSourceList(
+        widget.organizationId,
+        widget.workspaceId,
+      );
+      
+      // Load tags
+      final tagsResponse = await _workspaceRepository.getTagList(
+        widget.organizationId,
+        widget.workspaceId,
+      );
+
+      if (mounted) {
+        setState(() {
+          // Handle sources response
+          if (Helpers.isResponseSuccess(sourcesResponse) && sourcesResponse['content'] != null) {
+            final apiSources = (sourcesResponse['content'] as List)
+                .map((source) {
+                  if (source is Map<String, dynamic>) {
+                    return source['name']?.toString() ?? source['utmSource']?.toString() ?? '';
+                  } else {
+                    return source.toString();
+                  }
+                })
+                .where((source) => source.isNotEmpty)
+                .toList();
+            _customerSourceList = apiSources.isNotEmpty ? apiSources : _defaultSources;
+          } else {
+            _customerSourceList = _defaultSources;
+          }
+          
+          // Handle tags response
+          if (Helpers.isResponseSuccess(tagsResponse) && tagsResponse['content'] != null) {
+            final apiTags = (tagsResponse['content'] as List)
+                .map((tag) {
+                  String tagName = '';
+                  if (tag is Map<String, dynamic>) {
+                    tagName = tag['name']?.toString() ?? tag['tagName']?.toString() ?? '';
+                  } else {
+                    tagName = tag.toString();
+                  }
+                  return tagName.isNotEmpty ? ChipData(tagName, tagName) : null;
+                })
+                .where((chipData) => chipData != null)
+                .cast<ChipData>()
+                .toList();
+            _tagMenu = apiTags.isNotEmpty ? apiTags : _defaultTags;
+          } else {
+            _tagMenu = _defaultTags;
+          }
+          
+          _isLoadingSources = false;
+          _isLoadingTags = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading sources and tags: $e');
+      if (mounted) {
+        setState(() {
+          // Use fallback data when API fails
+          _customerSourceList = _defaultSources;
+          _tagMenu = _defaultTags;
+          _isLoadingSources = false;
+          _isLoadingTags = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể tải danh sách từ server, sử dụng dữ liệu mặc định')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -194,13 +285,19 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
         formData,
       );
 
-      if (response['code'] == 0) {
+      // Check for success using helper function
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         if (!mounted) return;
 
         // Add customer to provider
         ref
             .read(customerListProvider.notifier)
             .addCustomer(response['content']);
+
+        // Trigger refresh cho customers list
+        ref
+            .read(customerListRefreshProvider.notifier)
+            .notifyCustomerListChanged();
 
         // Navigate back
         context.pop();
@@ -224,8 +321,12 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
@@ -488,65 +589,99 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
                 ],
               ),
               const SizedBox(height: 6),
-              ChipsInput<ChipData>(
-                initialValue: const [],
-                decoration: InputDecoration(
-                  hintText: "Hãy thêm nhãn",
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF667085),
-                    fontSize: 14,
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F8F8),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                suggestions: tagMenu,
-                findSuggestions: (String query) {
-                  if (query.isEmpty) {
-                    return tagMenu;
-                  }
-                  return tagMenu
-                      .where((tag) =>
-                          tag.name.toLowerCase().contains(query.toLowerCase()))
-                      .toList();
-                },
-                onChanged: (List<ChipData> data) {
-                  setState(() {
-                    _tagList.clear();
-                    _tagList.addAll(data);
-                  });
-                },
-                chipBuilder: (context, state, ChipData data) {
-                  return Chip(
-                    label: Text(data.name),
-                    onDeleted: () => state.deleteChip(data),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    backgroundColor: const Color(0xFFEAECF0),
-                    side: BorderSide.none,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              _isLoadingTags
+                  ? Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F8F8),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    )
+                  : ChipsInput<ChipData>(
+                      initialValue: const [],
+                      suggestionsBoxMaxHeight: 250,
+                      decoration: InputDecoration(
+                        hintText: "Hãy thêm nhãn",
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF667085),
+                          fontSize: 14,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8F8F8),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      suggestions: _tagMenu,
+                      findSuggestions: (String query) {
+                        if (query.isEmpty) {
+                          return _tagMenu;
+                        }
+                        return _tagMenu
+                            .where((tag) =>
+                                tag.name.toLowerCase().contains(query.toLowerCase()))
+                            .toList();
+                      },
+                      onChanged: (List<ChipData> data) {
+                        setState(() {
+                          _tagList.clear();
+                          _tagList.addAll(data);
+                        });
+                      },
+                      chipBuilder: (context, state, ChipData data) {
+                        return Chip(
+                          label: Text(data.name),
+                          onDeleted: () => state.deleteChip(data),
+                          deleteIcon: const Icon(Icons.close, size: 18),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          backgroundColor: const Color(0xFFEAECF0),
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          labelStyle: const TextStyle(
+                            color: Color(0xFF1A1C1E),
+                            fontSize: 14,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        );
+                      },
+                      suggestionBuilder: (context, state, ChipData data) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: InkWell(
+                            onTap: () => state.selectSuggestion(data),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                data.name,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF1A1C1E),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    labelStyle: const TextStyle(
-                      color: Color(0xFF1A1C1E),
-                      fontSize: 14,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  );
-                },
-                suggestionBuilder: (context, state, ChipData data) {
-                  return ListTile(
-                    key: ObjectKey(data),
-                    title: Text(data.name),
-                    onTap: () => state.selectSuggestion(data),
-                  );
-                },
-              ),
               const SizedBox(height: 15),
 
               // Birthday field
@@ -602,7 +737,7 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
 
               // Customer source field
               InkWell(
-                onTap: () {
+                onTap: _isLoadingSources ? null : () {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -631,38 +766,42 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
                             ),
                           ),
                           Expanded(
-                            child: SingleChildScrollView(
-                              controller: scrollController,
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                    top: 0.0,
-                                    bottom: 16.0,
-                                    right: 16.0,
-                                    left: 16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ...customerSourceList.map(
-                                      (source) => Column(
+                            child: _isLoadingSources
+                                ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                : SingleChildScrollView(
+                                    controller: scrollController,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 0.0,
+                                          bottom: 16.0,
+                                          right: 16.0,
+                                          left: 16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          ListTile(
-                                            title: Text(source),
-                                            onTap: () {
-                                              setState(() {
-                                                _customerSourceController.text =
-                                                    source;
-                                              });
-                                              Navigator.pop(context);
-                                            },
+                                          ..._customerSourceList.map(
+                                            (source) => Column(
+                                              children: [
+                                                ListTile(
+                                                  title: Text(source),
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _customerSourceController.text =
+                                                          source;
+                                                    });
+                                                    Navigator.pop(context);
+                                                  },
+                                                ),
+                                                const Divider(height: 1),
+                                              ],
+                                            ),
                                           ),
-                                          const Divider(height: 1),
                                         ],
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                                  ),
                           ),
                         ],
                       ),
@@ -673,9 +812,15 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
                   child: BorderTextField(
                     controller: _customerSourceController,
                     name: "Nguồn khách hàng",
-                    nameHolder: "Chọn nguồn",
+                    nameHolder: _isLoadingSources ? "Đang tải..." : "Chọn nguồn",
                     isEditAble: false,
-                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                    suffixIcon: _isLoadingSources
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.keyboard_arrow_down, size: 20),
                   ),
                 ),
               ),
@@ -755,36 +900,52 @@ class _AddCustomerPageState extends ConsumerState<AddCustomerPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 100),
+              // Extra bottom padding to ensure button is visible
+              SizedBox(height: 120 + safeAreaBottom),
             ],
           ),
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: ElevatedButton(
-          onPressed: _onSubmit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5c33f0),
-            minimumSize: Size(MediaQuery.of(context).size.width * 0.7, 42),
-            maximumSize: Size(MediaQuery.of(context).size.width * 0.7, 42),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: EdgeInsets.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            bottom: 24 + (bottomPadding > 0 ? 8 : 0),
+            top: 16,
           ),
-          child: const Text(
-            "Tiếp tục",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: bottomPadding > 0 ? [] : [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                offset: const Offset(0, -2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: _onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5c33f0),
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              "Tiếp tục",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

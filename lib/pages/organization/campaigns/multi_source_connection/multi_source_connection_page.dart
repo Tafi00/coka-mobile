@@ -10,7 +10,6 @@ import 'package:coka/pages/organization/campaigns/multi_source_connection/compon
 import 'package:coka/pages/organization/campaigns/multi_source_connection/components/edit_webhook_page.dart';
 import 'package:coka/pages/organization/campaigns/multi_source_connection/components/add_connection_page.dart';
 import 'package:coka/api/providers.dart';
-
 class MultiSourceConnectionPage extends ConsumerStatefulWidget {
   final String organizationId;
   

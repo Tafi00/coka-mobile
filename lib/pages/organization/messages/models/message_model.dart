@@ -15,6 +15,9 @@ class Message {
   final String fullName;
   final int status;
   final List<Attachment>? attachments;
+  final String? localId;
+  final bool sending;
+  final FileAttachment? fileAttachment;
 
   Message({
     required this.id,
@@ -31,6 +34,9 @@ class Message {
     required this.fullName,
     required this.status,
     this.attachments,
+    this.localId,
+    this.sending = false,
+    this.fileAttachment,
   });
 
   bool get isFromMe =>
@@ -57,6 +63,15 @@ class Message {
       }
     }
 
+    FileAttachment? fileAttachment;
+    if (json['fileAttachment'] != null) {
+      try {
+        fileAttachment = FileAttachment.fromJson(json['fileAttachment']);
+      } catch (e) {
+        print('Error parsing fileAttachment: $e');
+      }
+    }
+
     return Message(
       id: json['id'] ?? '',
       conversationId: json['conversationId'] ?? '',
@@ -74,6 +89,9 @@ class Message {
       fullName: json['fullName'] ?? '',
       status: json['status'] ?? 0,
       attachments: attachments,
+      localId: json['localId'],
+      sending: json['sending'] ?? false,
+      fileAttachment: fileAttachment,
     );
   }
 }
@@ -100,6 +118,29 @@ class Attachment {
       url: url,
       name: json['name']?.toString(),
       payload: payload,
+    );
+  }
+}
+
+class FileAttachment {
+  final String name;
+  final String type;
+  final int size;
+  final String url;
+
+  FileAttachment({
+    required this.name,
+    required this.type,
+    required this.size,
+    required this.url,
+  });
+
+  factory FileAttachment.fromJson(Map<String, dynamic> json) {
+    return FileAttachment(
+      name: json['name']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
+      size: json['size'] is int ? json['size'] : int.tryParse(json['size']?.toString() ?? '0') ?? 0,
+      url: json['url']?.toString() ?? '',
     );
   }
 }

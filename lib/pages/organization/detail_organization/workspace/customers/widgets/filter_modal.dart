@@ -154,7 +154,7 @@ class _FilterModalState extends State<FilterModal> {
 
   static final _inputDecoration = InputDecoration(
     hintText: 'Tất cả',
-    suffixIcon: const Icon(Icons.keyboard_arrow_down, color: AppColors.text),
+    suffixIcon: const Icon(Icons.keyboard_arrow_down, color: AppColors.text, size: 20),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),

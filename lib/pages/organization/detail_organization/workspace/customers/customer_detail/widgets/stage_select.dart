@@ -100,9 +100,9 @@ class _StageSelectState extends ConsumerState<StageSelect>
                     widget.stage?.name ?? "Chọn trạng thái",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 8),
                   const Icon(
-                    Icons.arrow_drop_down,
+                    Icons.keyboard_arrow_down,
                     size: 20,
                   )
                 ],

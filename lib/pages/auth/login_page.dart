@@ -6,9 +6,9 @@ import 'package:coka/pages/auth/verify_otp_page.dart';
 import 'package:flutter/material.dart';
 import 'package:coka/api/repositories/auth_repository.dart';
 import 'package:coka/api/api_client.dart';
+import 'package:coka/core/utils/helpers.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:io' show Platform;
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -79,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         // Lưu token vào secure storage
         await ApiClient.storage.write(
           key: 'access_token',
@@ -121,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         // Lưu token vào secure storage
         await ApiClient.storage.write(
           key: 'access_token',

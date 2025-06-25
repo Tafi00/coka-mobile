@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'tabs/all_messages_tab.dart';
 import 'tabs/facebook_messages_tab.dart';
 import 'tabs/zalo_messages_tab.dart';
+import '../../../core/utils/helpers.dart';
+
+/// Avatar Preloader để tối ưu performance
+class AvatarPreloader {
+  static Future<void> preloadAvatars(List<dynamic> messages, BuildContext context) async {
+    final uniqueAvatars = messages
+        .where((msg) => msg.avatar != null && msg.avatar!.isNotEmpty)
+        .map((msg) => AvatarUtils.getAvatarUrl(msg.avatar))
+        .where((url) => url != null)
+        .toSet();
+    
+    for (final url in uniqueAvatars) {
+      try {
+        await precacheImage(CachedNetworkImageProvider(url!), context);
+      } catch (e) {
+        print('Failed to preload avatar: $url');
+      }
+    }
+  }
+  
+  static void clearMemoryCache() {
+    AvatarMemoryManager.clearCache();
+  }
+}
 
 class MessagesPage extends StatelessWidget {
   final String organizationId;
@@ -58,6 +83,7 @@ class _MessagesView extends ConsumerWidget {
             ZaloMessagesTab(organizationId: organizationId),
           ],
         ),
+
       ),
     );
   }

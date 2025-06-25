@@ -6,7 +6,7 @@ import 'package:coka/api/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../providers/customer_provider.dart';
-
+import 'package:coka/core/utils/helpers.dart';
 class ImportContactBottomSheet extends ConsumerStatefulWidget {
   final String organizationId;
   final String workspaceId;
@@ -76,7 +76,7 @@ class _ImportContactBottomSheetState
               phoneStringList,
             );
 
-            if (response != null && response['code'] == 0) {
+            if (response != null && Helpers.isResponseSuccess(response)) {
               final phones = response['content']?['phones'] as List?;
 
               if (phones != null) {

@@ -492,6 +492,10 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                                 try {
                                     await ref.read(customerDetailProvider(widget.customerId).notifier).deleteCustomer(widget.organizationId, widget.workspaceId);
                                     ref.read(customerListProvider.notifier).removeCustomer(widget.customerId);
+                                    
+                                    // Trigger refresh cho customers list
+                                    ref.read(customerListRefreshProvider.notifier).notifyCustomerListChanged();
+                                    
                                   if (!context.mounted) return;
                                   context.pop();
                                   context.pop();

@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import '../../core/utils/helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:coka/api/repositories/organization_repository.dart';
 import 'package:coka/api/api_client.dart';
@@ -9,7 +9,6 @@ import 'package:coka/shared/widgets/avatar_widget.dart';
 import 'package:coka/shared/widgets/loading_dialog.dart';
 import 'package:coka/core/theme/text_styles.dart';
 import 'package:coka/core/theme/app_colors.dart';
-
 class JoinOrganizationPage extends StatefulWidget {
   const JoinOrganizationPage({super.key});
 
@@ -51,7 +50,7 @@ class _JoinOrganizationPageState extends State<JoinOrganizationPage> {
       setState(() {
         isFetching = false;
         
-        if (response['code'] == 0) {
+        if (Helpers.isResponseSuccess(response)) {
           orgList = response['content'] ?? [];
         } else {
           // Hiển thị lỗi nếu cần
@@ -179,7 +178,7 @@ class _JoinOrgItemState extends State<JoinOrgItem> {
       
       Navigator.of(context).pop(); // Đóng dialog
       
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         setState(() {
           stageBtn = 1;
         });

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coka/api/repositories/lead_repository.dart';
 import 'package:coka/models/lead/connection_model.dart';
-
+import '../../core/utils/helpers.dart';
 class MultiSourceConnectionProvider extends ChangeNotifier {
   final LeadRepository _leadRepository;
   
@@ -127,7 +127,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.workspaceId,
             newStatus,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'facebook':
@@ -137,7 +137,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.id,
             {'status': newStatus},
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'zalo':
@@ -147,7 +147,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.id,
             newStatus,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'tiktok':
@@ -157,7 +157,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.id,
             newStatus,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'webhook':
@@ -167,7 +167,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.id,
             newStatus,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
       }
       
@@ -195,7 +195,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             organizationId,
             connection.workspaceId,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'facebook':
@@ -204,7 +204,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.id,
             'FACEBOOK',
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'zalo':
@@ -213,7 +213,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.workspaceId,
             connection.id,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'tiktok':
@@ -222,7 +222,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.workspaceId,
             connection.id,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
           
         case 'webhook':
@@ -231,7 +231,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
             connection.workspaceId,
             connection.id,
           );
-          success = response['code'] == 0;
+          success = Helpers.isResponseSuccess(response);
           break;
       }
       
@@ -266,7 +266,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
       );
       
       // Kiểm tra kết quả
-      if (response['code'] == 0 && response['content'] != null) {
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         // Tạo thành công, load lại danh sách kết nối
         await loadAllConnections(organizationId);
         
@@ -310,7 +310,7 @@ class MultiSourceConnectionProvider extends ChangeNotifier {
       );
       
       // Kiểm tra kết quả
-      if (response['code'] == 0 && response['content'] != null) {
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         // Tạo thành công, load lại danh sách kết nối
         await loadAllConnections(organizationId);
         

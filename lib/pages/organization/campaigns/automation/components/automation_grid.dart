@@ -110,7 +110,27 @@ class AutomationGrid extends ConsumerWidget {
   }
   
   double _getChildAspectRatio(double width) {
-    if (width < 600) return 2.8;  // Mobile - extremely compact
-    return 3.2; // Tablet/Desktop - extremely compact
+    // Tính toán dựa trên width và height dự kiến của card
+    // Card height estimate:
+    // - Header row (badge + icons + switch): ~31px 
+    // - SizedBox: 6px
+    // - Title (max 2 lines): ~36px (18px per line)
+    // - SizedBox: 4px
+    // - Workspace text: ~18px
+    // - Statistics area: ~28px (including spacing)
+    // - Container padding: 8px * 2 = 16px
+    // Total: ~139px
+    
+    final double itemWidth = _getItemWidth(width);
+    final double estimatedHeight = 150; // More padding for comfortable spacing
+    
+    return itemWidth / estimatedHeight;
+  }
+  
+  double _getItemWidth(double width) {
+    final crossAxisCount = _getCrossAxisCount(width);
+    final spacing = 16.0 * (crossAxisCount - 1); // Spacing between items
+    final padding = 32.0; // Left and right padding
+    return (width - spacing - padding) / crossAxisCount;
   }
 } 

@@ -8,7 +8,7 @@ import 'package:coka/api/repositories/workspace_repository.dart';
 import 'package:coka/api/api_client.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:coka/core/utils/helpers.dart';
 // Lớp quản lý dữ liệu workspace
 class WorkspaceProvider {
   final WorkspaceRepository _repository;
@@ -18,7 +18,7 @@ class WorkspaceProvider {
 
   Future<void> loadWorkspaces(String organizationId) async {
     final response = await _repository.getWorkspaces(organizationId);
-    if (response['code'] == 0 && response['content'] != null) {
+    if (Helpers.isResponseSuccess(response) && response['content'] != null) {
       final List<dynamic> data = response['content'];
       workspaces = data.map((item) => {
         'id': item['id'],
@@ -213,7 +213,7 @@ class _EditWebhookPageState extends ConsumerState<EditWebhookPage> {
       );
 
       if (context.mounted) {
-        if (response['code'] == 0) {
+        if (Helpers.isResponseSuccess(response)) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Cập nhật webhook thành công'),

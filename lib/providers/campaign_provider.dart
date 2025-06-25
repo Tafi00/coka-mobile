@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/repositories/campaign_repository.dart';
 import '../api/api_client.dart';
 import '../models/campaign.dart';
-
+import '../../core/utils/helpers.dart';
 final campaignRepositoryProvider = Provider<CampaignRepository>((ref) {
   return CampaignRepository(ApiClient());
 });
@@ -53,7 +53,7 @@ class CampaignsNotifier extends StateNotifier<AsyncValue<List<Campaign>>> {
         queryParameters: queryParameters,
       );
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         final campaignsData = response['content'] as List<dynamic>;
         final campaigns = campaignsData
             .map((data) => Campaign.fromJson(data as Map<String, dynamic>))
@@ -94,7 +94,7 @@ class CampaignsNotifier extends StateNotifier<AsyncValue<List<Campaign>>> {
         additionalParams: additionalParams,
       );
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         final campaignsData = response['content'] as List<dynamic>;
         final campaigns = campaignsData
             .map((data) => Campaign.fromJson(data as Map<String, dynamic>))
@@ -122,7 +122,7 @@ class CampaignsNotifier extends StateNotifier<AsyncValue<List<Campaign>>> {
         campaignData,
       );
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         final newCampaign = Campaign.fromJson(response['content']);
         
         // Cập nhật danh sách chiến dịch
@@ -150,7 +150,7 @@ class CampaignsNotifier extends StateNotifier<AsyncValue<List<Campaign>>> {
         campaignData,
       );
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         final updatedCampaign = Campaign.fromJson(response['content']);
         
         // Cập nhật danh sách chiến dịch
@@ -179,7 +179,7 @@ class CampaignsNotifier extends StateNotifier<AsyncValue<List<Campaign>>> {
         campaignId,
       );
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         // Xóa chiến dịch khỏi danh sách
         state.whenData((campaigns) {
           final updatedCampaigns = campaigns.where((campaign) => campaign.id != campaignId).toList();

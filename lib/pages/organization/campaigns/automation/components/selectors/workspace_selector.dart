@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../../shared/widgets/dropdown_button_widget.dart';
 
 /// Model cho workspace item
 class WorkspaceItem {
@@ -82,45 +83,10 @@ class WorkspaceSelector extends ConsumerWidget {
   }
 
   Widget _buildSelector(BuildContext context) {
-    return GestureDetector(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: const Color(0xFF3B82F6).withOpacity(0.3),
-          ),
-          borderRadius: BorderRadius.circular(4),
-          color: const Color(0xFF3B82F6).withOpacity(0.05),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isLoading)
-              const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 1.5),
-              )
-            else
-              Text(
-                selectedWorkspace?.name ?? 'Chọn không gian làm việc',
-                style: const TextStyle(
-                  color: Color(0xFF3B82F6),
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            if (!isLoading) ...[
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.arrow_drop_down,
-                color: Color(0xFF3B82F6),
-                size: 16,
-              ),
-            ],
-          ],
-        ),
-      ),
+    return PrimaryDropdownButton(
+      text: selectedWorkspace?.name ?? 'Chọn không gian làm việc',
+      isLoading: isLoading,
+      isEnabled: !isLoading && workspaces.isNotEmpty,
     );
   }
 }

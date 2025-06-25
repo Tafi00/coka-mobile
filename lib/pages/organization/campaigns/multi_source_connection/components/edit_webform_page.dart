@@ -21,6 +21,14 @@ class EditWebformPage extends ConsumerStatefulWidget {
 class _EditWebformPageState extends ConsumerState<EditWebformPage> {
   bool isLoading = false;
 
+  String _formatDisplayUrl(String url) {
+    if (url.isEmpty) return '';
+    if (url.contains("https://") || url.contains("http://")) {
+      return url;
+    }
+    return "https://$url";
+  }
+
   String getWebformStr(String id) {
     return '<meta name="coka-site-verification" content="$id" />'
         '<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({\'gtm.start\': '
@@ -89,6 +97,16 @@ class _EditWebformPageState extends ConsumerState<EditWebformPage> {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       }
+    }
+  }
+
+  void copyUrlToClipboard() {
+    final formattedUrl = _formatDisplayUrl(widget.data.url ?? '');
+    if (formattedUrl.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: formattedUrl));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã sao chép URL vào bộ nhớ đệm')),
+      );
     }
   }
 
@@ -178,12 +196,29 @@ class _EditWebformPageState extends ConsumerState<EditWebformPage> {
             const SizedBox(height: 16),
             
             // URL Field
-            const Text(
-              'Đường dẫn Website*',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              children: [
+                const Text(
+                  'Đường dẫn Website*',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: copyUrlToClipboard,
+                  icon: const Icon(Icons.copy, size: 14),
+                  label: const Text(
+                    'Sao chép URL',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Container(
@@ -195,7 +230,7 @@ class _EditWebformPageState extends ConsumerState<EditWebformPage> {
                 border: Border.all(color: Colors.grey.shade300),
               ),
               child: Text(
-                widget.data.url ?? '',
+                _formatDisplayUrl(widget.data.url ?? ''),
                 style: const TextStyle(fontSize: 14),
               ),
             ),

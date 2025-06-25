@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/repositories/organization_repository.dart';
 import '../api/api_client.dart';
-
+import '../../core/utils/helpers.dart';
 // Provider để lưu trữ thông tin tổ chức hiện tại
 final currentOrganizationProvider = StateNotifierProvider<CurrentOrganizationNotifier, AsyncValue<Map<String, dynamic>?>>((ref) {
   return CurrentOrganizationNotifier(OrganizationRepository(ApiClient()));
@@ -61,7 +61,7 @@ class CurrentOrganizationNotifier extends StateNotifier<AsyncValue<Map<String, d
       // Lấy danh sách tổ chức trước
       final response = await _organizationRepository.getOrganizations();
       
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         final organizations = response['content'] as List<dynamic>;
         
         // Tìm tổ chức hiện tại trong danh sách
@@ -116,7 +116,7 @@ class OrganizationsListNotifier extends StateNotifier<AsyncValue<List<dynamic>>>
       
       final response = await _organizationRepository.getOrganizations();
       
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         final organizations = response['content'] as List<dynamic>;
         state = AsyncValue.data(organizations);
         _isLoaded = true;

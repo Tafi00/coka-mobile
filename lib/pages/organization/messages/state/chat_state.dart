@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../../../api/repositories/message_repository.dart';
 import '../models/message_model.dart';
 import './message_state.dart';
@@ -91,56 +93,256 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
+  // Add local message ngay lập tức (optimistic UI như web)
+  void addLocalMessage(Message localMessage) {
+    state = state.copyWith(
+      messages: [localMessage, ...state.messages],
+    );
+  }
+
   Future<void> sendMessage(
     String organizationId,
     String conversationId,
     String content, {
     List<Map<String, dynamic>>? attachments,
   }) async {
+    if (content.trim().isEmpty) return;
+
     state = state.copyWith(isSending: true);
 
-    final tempId = DateTime.now().millisecondsSinceEpoch.toString();
-    final tempMessage = Message(
-      id: tempId,
+    // Tạo tin nhắn local với localId (theo logic web)
+    final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+    final localMessage = Message(
+      id: '', // Không có id server
+      localId: localId, // LocalId để identify
       conversationId: conversationId,
-      messageId: tempId,
-      from: 'me',
-      fromName: 'Me',
+      messageId: localId,
+      from: '124662217400086', // Page ID
+      fromName: 'You',
       to: '',
       toName: '',
       message: content,
       timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       isGpt: false,
       type: 'MESSAGE',
-      fullName: 'Me',
+      fullName: 'You', // TODO: Get from user profile
       status: 0,
+      sending: true, // Đang gửi
       attachments: attachments?.map((e) => Attachment.fromJson(e)).toList(),
     );
 
-    addMessage(tempMessage);
+    // Thêm tin nhắn local ngay lập tức
+    addLocalMessage(localMessage);
 
     try {
-      final body = {
-        'conversationId': conversationId,
-        'content': content,
-        if (attachments != null) 'attachments': attachments,
-      };
+      final response = await _repository.sendFacebookMessage(
+        organizationId,
+        conversationId,
+        content,
+        messageId: localId,
+        attachments: attachments,
+      );
 
-      await _repository.sendFacebookMessage(organizationId, body);
+      // Server sẽ trả về tin nhắn thật qua Firebase/WebSocket
+      // Ta chỉ cần remove local message khi server message arrive
+      _removeLocalMessage(localId);
 
-      await loadMessages(organizationId, conversationId, refresh: true);
     } catch (e) {
       print('Error sending message: $e');
-
-      final newErrors = Map<String, String>.from(state.messageErrors);
-      newErrors[tempId] = e.toString();
-
-      state = state.copyWith(
-        messageErrors: newErrors,
-      );
+      
+      // Mark local message as failed
+      _markMessageAsFailed(localId, e.toString());
+      // Rethrow để UI có thể hiển thị toast
+      rethrow;
     } finally {
       state = state.copyWith(isSending: false);
     }
+  }
+
+  Future<void> sendImageMessage(
+    String organizationId,
+    String conversationId,
+    XFile imageFile, {
+    String? textContent,
+  }) async {
+    state = state.copyWith(isSending: true);
+
+    // Tạo local message với ảnh (theo logic web: ảnh vào attachments)
+    final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+    final localMessage = Message(
+      id: '', // Không có id server
+      localId: localId,
+      conversationId: conversationId,
+      messageId: localId,
+      from: '124662217400086',
+      fromName: 'You', 
+      to: '',
+      toName: '',
+      message: textContent ?? '', // Text message nếu có
+      timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      isGpt: false,
+      type: 'MESSAGE',
+      fullName: 'You',
+      status: 0,
+      sending: true,
+      // ẢNH: Lưu vào attachments (như web)
+      attachments: [
+        Attachment(
+          type: 'image',
+          url: 'file://${imageFile.path}', // Local file URL
+          name: imageFile.name,
+          payload: {
+            'url': 'file://${imageFile.path}',
+            'name': imageFile.name,
+          },
+        ),
+      ],
+    );
+
+    // Hiển thị ngay lập tức
+    addLocalMessage(localMessage);
+
+    try {
+      final response = await _repository.sendImageMessage(
+        organizationId,
+        conversationId,
+        imageFile,
+        textMessage: textContent,
+      );
+
+      // Remove local message, server message sẽ arrive qua Firebase
+      _removeLocalMessage(localId);
+
+    } catch (e) {
+      print('Error sending image: $e');
+      _markMessageAsFailed(localId, e.toString());
+      // Rethrow để UI có thể hiển thị toast
+      rethrow;
+    } finally {
+      state = state.copyWith(isSending: false);
+    }
+  }
+
+  Future<void> sendFileMessage(
+    String organizationId,
+    String conversationId,
+    File file, {
+    String? textContent,
+  }) async {
+    state = state.copyWith(isSending: true);
+
+    final fileName = file.path.split('/').last;
+    
+    // Tạo local message với file (theo logic web: file khác vào fileAttachment)
+    final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+    final localMessage = Message(
+      id: '', // Không có id server
+      localId: localId,
+      conversationId: conversationId,
+      messageId: localId,
+      from: '124662217400086',
+      fromName: 'You',
+      to: '',
+      toName: '',
+      message: textContent ?? '', // Text message nếu có
+      timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      isGpt: false,
+      type: 'MESSAGE',
+      fullName: 'You',
+      status: 0,
+      sending: true,
+      // FILE KHÁC: Lưu vào fileAttachment (như web)
+      fileAttachment: FileAttachment(
+        name: fileName,
+        type: _getFileType(fileName),
+        size: file.lengthSync(),
+        url: 'file://${file.path}', // Local file URL
+      ),
+    );
+
+    // Hiển thị ngay lập tức
+    addLocalMessage(localMessage);
+
+    try {
+      final response = await _repository.sendFileMessage(
+        organizationId,
+        conversationId,
+        file,
+        textMessage: textContent,
+      );
+
+      // Remove local message, server message sẽ arrive qua Firebase
+      _removeLocalMessage(localId);
+
+    } catch (e) {
+      print('Error sending file: $e');
+      _markMessageAsFailed(localId, e.toString());
+      // Rethrow để UI có thể hiển thị toast
+      rethrow;
+    } finally {
+      state = state.copyWith(isSending: false);
+    }
+  }
+
+  // Helper method để get file type
+  String _getFileType(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  // Remove local message khi server message arrive
+  void _removeLocalMessage(String localId) {
+    final updatedMessages = state.messages.where((msg) => msg.localId != localId).toList();
+    state = state.copyWith(messages: updatedMessages);
+  }
+
+  // Mark local message as failed
+  void _markMessageAsFailed(String localId, String error) {
+    final updatedMessages = state.messages.map((msg) {
+      if (msg.localId == localId) {
+        return Message(
+          id: msg.id,
+          localId: msg.localId,
+          conversationId: msg.conversationId,
+          messageId: msg.messageId,
+          from: msg.from,
+          fromName: msg.fromName,
+          to: msg.to,
+          toName: msg.toName,
+          message: msg.message,
+          timestamp: msg.timestamp,
+          isGpt: msg.isGpt,
+          type: msg.type,
+          fullName: msg.fullName,
+          status: 2, // Error status
+          sending: false,
+          attachments: msg.attachments,
+          fileAttachment: msg.fileAttachment,
+        );
+      }
+      return msg;
+    }).toList();
+
+    final newErrors = Map<String, String>.from(state.messageErrors);
+    newErrors[localId] = error;
+
+    state = state.copyWith(
+      messages: updatedMessages,
+      messageErrors: newErrors,
+    );
   }
 
   void addMessage(Message message) {
@@ -172,5 +374,59 @@ class ChatNotifier extends StateNotifier<ChatState> {
       content,
       attachments: attachments,
     );
+  }
+
+  // Gửi ảnh lên server (không tạo local message)
+  Future<void> sendImageToServer(
+    String organizationId,
+    String conversationId,
+    XFile imageFile,
+    String localId, {
+    String? textMessage,
+  }) async {
+    try {
+      final response = await _repository.sendImageMessage(
+        organizationId,
+        conversationId,
+        imageFile,
+        textMessage: textMessage,
+      );
+
+      // Remove local message sau khi server trả về thành công
+      _removeLocalMessage(localId);
+
+    } catch (e) {
+      print('Error sending image: $e');
+      _markMessageAsFailed(localId, e.toString());
+      // Rethrow để UI có thể hiển thị toast
+      rethrow;
+    }
+  }
+
+  // Gửi file lên server (không tạo local message)
+  Future<void> sendFileToServer(
+    String organizationId,
+    String conversationId,
+    File file,
+    String localId, {
+    String? textMessage,
+  }) async {
+    try {
+      final response = await _repository.sendFileMessage(
+        organizationId,
+        conversationId,
+        file,
+        textMessage: textMessage,
+      );
+
+      // Remove local message sau khi server trả về thành công  
+      _removeLocalMessage(localId);
+
+    } catch (e) {
+      print('Error sending file: $e');
+      _markMessageAsFailed(localId, e.toString());
+      // Rethrow để UI có thể hiển thị toast
+      rethrow;
+    }
   }
 }

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:coka/api/repositories/chatbot_repository.dart';
 import 'package:coka/api/api_client.dart';
+import 'package:coka/core/utils/helpers.dart';
 
 class CreateChatbotPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -129,18 +130,20 @@ class _CreateChatbotPageState extends ConsumerState<CreateChatbotPage> {
       
       final response = await _chatbotRepository.createChatbot(widget.organizationId, data);
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         // Tạo thành công
+        final message = response['message'] ?? 'Tạo chatbot thành công';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tạo chatbot thành công')),
+          SnackBar(content: Text(message)),
         );
-        // Quay lại trang danh sách
+        // Quay lại trang danh sách và báo hiệu cần reload
         if (!mounted) return;
-        context.pop();
+        context.pop(true); // Trả về true để báo hiệu đã tạo thành công
       } else {
         // Có lỗi từ server
+        final message = response['message'] ?? 'Có lỗi xảy ra, xin vui lòng thử lại';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['message'] ?? 'Lỗi không xác định')),
+          SnackBar(content: Text(message)),
         );
       }
     } catch (e) {

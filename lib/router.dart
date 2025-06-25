@@ -286,6 +286,21 @@ final appRoutes = [
             workspaceId: workspaceId,
           );
         },
+        routes: [
+          GoRoute(
+            path: ':teamId',
+            builder: (context, state) {
+              final organizationId = state.pathParameters['organizationId']!;
+              final workspaceId = state.pathParameters['workspaceId']!;
+              final teamId = state.pathParameters['teamId']!;
+              return TeamDetailPage(
+                organizationId: organizationId,
+                workspaceId: workspaceId,
+                teamId: teamId,
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/organization/:organizationId/workspace/:workspaceId/reports',
@@ -301,18 +316,5 @@ final appRoutes = [
     ],
   ),
 
-  // Detail routes
-  GoRoute(
-    path: '/organization/:organizationId/workspace/:workspaceId/teams/:teamId',
-    builder: (context, state) {
-      final organizationId = state.pathParameters['organizationId']!;
-      final workspaceId = state.pathParameters['workspaceId']!;
-      final teamId = state.pathParameters['teamId']!;
-      return TeamDetailPage(
-        organizationId: organizationId,
-        workspaceId: workspaceId,
-        teamId: teamId,
-      );
-    },
-  ),
+
 ];

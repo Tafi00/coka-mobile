@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../shared/widgets/avatar_widget.dart';
 import '../../../../../shared/widgets/search_bar.dart';
+import '../../../../../shared/widgets/dropdown_button_widget.dart';
 import '../../../../../models/find_child.dart';
 import 'package:coka/providers/team_provider.dart';
 
@@ -121,6 +122,8 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                     ...buildMultiWidgetList(
                       teamList,
                       (data) {
+                                              // Chỉ navigate nếu có children
+                      if (data["childs"] != null && (data["childs"] as List).isNotEmpty) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -131,6 +134,7 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                             ),
                           ),
                         );
+                      }
                       },
                     ),
                   ],
@@ -147,6 +151,7 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
     return childs.map((e) {
       return CExpansionTile(
         name: e["name"],
+        id: e["id"],
         managers: e["managers"] ?? [],
         childs: e["childs"] ?? [],
         avatar: e["avatar"],
@@ -173,7 +178,12 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: InkWell(
+        title: TitleDropdownButton(
+          text: widget.parentId == null
+              ? "Đội sale"
+              : findBranchWithParentId(teamListAsync.value ?? [],
+                      widget.parentId)?["name"] ??
+                  "",
           onTap: () {
             if (teamListAsync.value != null) {
               // Kiểm tra trước nếu không có dữ liệu thì không mở
@@ -183,32 +193,7 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
               showTreeViewBottomSheet(context);
             }
           },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: MediaQuery.of(context).size.width - 180,
-                child: Text(
-                  widget.parentId == null
-                      ? "Đội sale"
-                      : findBranchWithParentId(teamListAsync.value ?? [],
-                              widget.parentId)?["name"] ??
-                          "",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2329),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 3),
-              const Icon(
-                Icons.arrow_drop_down,
-                color: Color(0xFF1F2329),
-              )
-            ],
-          ),
+          isEnabled: teamListAsync.value?.isNotEmpty ?? false,
         ),
         centerTitle: true,
       ),
@@ -393,17 +378,20 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                                           : team['managers'][0]['fullName'],
                                     ),
                                     onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => TeamsPage(
-                                            organizationId:
-                                                widget.organizationId,
-                                            workspaceId: widget.workspaceId,
-                                            parentId: team["id"],
+                                      // Chỉ navigate nếu có children
+                                      if (team["childs"] != null && (team["childs"] as List).isNotEmpty) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => TeamsPage(
+                                              organizationId:
+                                                  widget.organizationId,
+                                              workspaceId: widget.workspaceId,
+                                              parentId: team["id"],
+                                            ),
                                           ),
-                                        ),
-                                      );
+                                        );
+                                      }
                                     },
                                   );
                                 },
@@ -484,6 +472,7 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
 
 class CExpansionTile extends StatefulWidget {
   final String name;
+  final String? id;
   final List managers, childs;
   final Function()? onTap;
   final String? avatar;
@@ -497,6 +486,7 @@ class CExpansionTile extends StatefulWidget {
     required this.childs,
     required this.organizationId,
     required this.workspaceId,
+    this.id,
     this.onTap,
     this.avatar,
   });
@@ -542,7 +532,8 @@ class _CExpansionTileState extends State<CExpansionTile> {
                 ),
           onTap: () {
             if (widget.childs.isEmpty) {
-              widget.onTap?.call();
+              // Không navigate tới team detail cho nhánh cuối
+              return;
             } else {
               setState(() {
                 _isExpanded = !_isExpanded;
@@ -557,21 +548,27 @@ class _CExpansionTileState extends State<CExpansionTile> {
               children: widget.childs
                   .map((child) => CExpansionTile(
                         name: child["name"],
+                        id: child["id"],
                         managers: child["managers"] ?? [],
                         childs: child["childs"] ?? [],
                         avatar: child["avatar"],
                         organizationId: widget.organizationId,
                         workspaceId: widget.workspaceId,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TeamsPage(
-                              organizationId: widget.organizationId,
-                              workspaceId: widget.workspaceId,
-                              parentId: child["id"],
-                            ),
-                          ),
-                        ),
+                        onTap: () {
+                          // Chỉ navigate nếu có children
+                          if (child["childs"] != null && (child["childs"] as List).isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TeamsPage(
+                                  organizationId: widget.organizationId,
+                                  workspaceId: widget.workspaceId,
+                                  parentId: child["id"],
+                                ),
+                              ),
+                            );
+                          }
+                        },
                       ))
                   .toList(),
             ),

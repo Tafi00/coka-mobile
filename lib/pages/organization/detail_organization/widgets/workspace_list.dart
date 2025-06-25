@@ -112,8 +112,8 @@ class _WorkspaceListState extends State<WorkspaceList> {
       padding: const EdgeInsets.only(bottom: 12, top: 8),
       child: InkWell(
         onTap: () {
-          Navigator.of(context).pop(); // Đóng bottom sheet
-          context.push(
+          // Sử dụng go thay vì push để replace route thay vì thêm vào stack
+          context.go(
               '/organization/${widget.organizationId}/workspace/${workspace['id']}/customers');
         },
         child: Row(

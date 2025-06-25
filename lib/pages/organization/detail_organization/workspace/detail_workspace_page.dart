@@ -59,7 +59,8 @@ class _DetailWorkspacePageState extends ConsumerState<DetailWorkspacePage> {
   Widget build(BuildContext context) {
     final state = GoRouterState.of(context);
     final location = state.uri.path;
-    final hideBottomNav = location.contains('/customers/');
+    final hideBottomNav = location.contains('/customers/') || 
+                          (location.contains('/teams/') && location.split('/').length > 6);
 
     return Scaffold(
       body: widget.child,

@@ -80,7 +80,7 @@ class _AutomationCardBaseState extends State<AutomationCardBase>
                 onTap: widget.onTap,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  constraints: const BoxConstraints(minHeight: 55),
+                  width: double.infinity,
                   padding: const EdgeInsets.all(8),
                   child: Stack(
                     children: [

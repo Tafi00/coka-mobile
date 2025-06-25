@@ -11,7 +11,7 @@ import 'package:coka/shared/widgets/awesome_alert.dart';
 import 'package:coka/shared/widgets/loading_indicator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-
+import '../../core/utils/helpers.dart';
 class SettingsPage extends StatefulWidget {
   final String? organizationId;
   final String? userRole;
@@ -57,7 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadUserInfo() async {
     try {
       final response = await _authRepository.getUserInfo();
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         setState(() {
           _userInfo = response['content'];
         });

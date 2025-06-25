@@ -59,7 +59,7 @@ class CustomAlertDialog extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF1F2329),
               ),
@@ -205,5 +205,24 @@ void showCustomAlert({
       iconColor: iconColor,
       showCancelButton: showCancelButton,
     ),
+  );
+}
+
+void showInfoAlert({
+  required BuildContext context,
+  required String title,
+  required String message,
+  String? confirmText,
+  VoidCallback? onConfirm,
+}) {
+  showCustomAlert(
+    context: context,
+    title: title,
+    message: message,
+    confirmText: confirmText ?? 'Đã hiểu',
+    onConfirm: onConfirm,
+    icon: Icons.info_outline,
+    iconColor: Colors.blue,
+    showCancelButton: false,
   );
 } 

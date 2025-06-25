@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/repositories/customer_repository.dart';
 import '../api/api_client.dart';
+import '../core/utils/helpers.dart';
 import 'package:dio/dio.dart';
 
 final customerListProvider = StateNotifierProvider<CustomerListNotifier,
@@ -216,7 +217,7 @@ class CustomerDetailNotifier
       );
       
       // Kiểm tra mã trạng thái từ API
-      if (response['code'] != null && response['code'] != 200) {
+      if (!Helpers.isResponseSuccess(response)) {
         final errorMessage = response['message'] as String? ?? 'Đã xảy ra lỗi khi chuyển phụ trách';
         throw errorMessage;
       }
@@ -276,26 +277,31 @@ class CustomerDetailNotifier
       );
       
       // Kiểm tra mã trạng thái từ API - assignToCustomerV2 trả về code 0 khi thành công
-      if (response['code'] != null && response['code'] != 0) {
+      if (!Helpers.isResponseSuccess(response)) {
         final errorMessage = response['message'] as String? ?? 'Đã xảy ra lỗi khi chuyển phụ trách';
         throw errorMessage;
       }
 
+      print('assignToCustomerV2: API call successful, response: $response');
+
       // Load lại customer detail
       final customerData = await loadCustomerDetail(organizationId, workspaceId, skipLoading: true);
+      print('assignToCustomerV2: Customer detail reloaded successfully');
 
       // Load lại journey list
       _ref.invalidate(customerJourneyProvider(_customerId));
       await _ref
           .read(customerJourneyProvider(_customerId).notifier)
           .loadJourneyList(organizationId, workspaceId);
+      print('assignToCustomerV2: Journey list reloaded successfully');
 
       // Refresh customer list một lần duy nhất
       _ref.read(customerListProvider.notifier).clearCache();
       
       // Notify về assignment change để trigger refresh
       _ref.read(customerAssignmentRefreshProvider.notifier).notifyAssignmentChanged();
-          
+      
+      print('assignToCustomerV2: Assignment completed successfully');
       return customerData;
     } catch (error) {
       // Debug
@@ -336,7 +342,7 @@ class CustomerDetailNotifier
       );
       
       // Kiểm tra mã trạng thái từ API - API trả về code 0 khi thành công
-      if (response['code'] != null && response['code'] != 0) {
+      if (!Helpers.isResponseSuccess(response)) {
         final errorMessage = response['message'] as String? ?? 'Đã xảy ra lỗi khi cập nhật khách hàng';
         throw errorMessage;
       }
@@ -388,7 +394,7 @@ class CustomerDetailNotifier
       );
       
       // Kiểm tra mã trạng thái từ API
-      if (response['code'] != null && response['code'] != 200) {
+      if (!Helpers.isResponseSuccess(response)) {
         final errorMessage = response['message'] as String? ?? 'Đã xảy ra lỗi khi xóa khách hàng';
         throw errorMessage;
       }
@@ -522,6 +528,19 @@ class CustomerAssignmentRefreshNotifier extends StateNotifier<int> {
   CustomerAssignmentRefreshNotifier() : super(0);
   
   void notifyAssignmentChanged() {
+    state = state + 1; // Increment để trigger listeners
+  }
+}
+
+// Customer list refresh notifier - để refresh danh sách khi có thêm/xóa/sửa customer
+final customerListRefreshProvider = StateNotifierProvider<CustomerListRefreshNotifier, int>(
+  (ref) => CustomerListRefreshNotifier(),
+);
+
+class CustomerListRefreshNotifier extends StateNotifier<int> {
+  CustomerListRefreshNotifier() : super(0);
+  
+  void notifyCustomerListChanged() {
     state = state + 1; // Increment để trigger listeners
   }
 }

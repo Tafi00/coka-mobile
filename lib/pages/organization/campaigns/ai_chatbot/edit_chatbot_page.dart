@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:coka/api/repositories/chatbot_repository.dart';
 import 'package:coka/api/api_client.dart';
+import 'package:coka/core/utils/helpers.dart';
 
 class EditChatbotPage extends ConsumerStatefulWidget {
   final String organizationId;
@@ -59,7 +60,7 @@ class _EditChatbotPageState extends ConsumerState<EditChatbotPage> {
       // Thay thế việc gọi API getChatbotDetail bằng việc lấy từ danh sách chatbot
       final response = await _chatbotRepository.getChatbotList(widget.organizationId);
 
-      if (response['code'] == 0 && response['content'] != null) {
+      if (Helpers.isResponseSuccess(response) && response['content'] != null) {
         final chatbotList = response['content'] as List;
         // Tìm chatbot theo id trong danh sách
         final chatbotData = chatbotList.firstWhere(
@@ -211,7 +212,7 @@ class _EditChatbotPageState extends ConsumerState<EditChatbotPage> {
         data
       );
 
-      if (response['code'] == 0) {
+      if (Helpers.isResponseSuccess(response)) {
         // Cập nhật thành công
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật chatbot thành công')),

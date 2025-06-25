@@ -233,8 +233,23 @@ class _CustomersListState extends ConsumerState<CustomersList> {
         }
       }
     });
-    
-    // Đơn giản hóa - chỉ listen thông qua customerAssignmentRefreshProvider
+
+    // Listen to customer list changes để auto-refresh khi có thêm/xóa/sửa customer
+    ref.listen<int>(customerListRefreshProvider, (previous, next) {
+      if (previous != null && previous != next && mounted) {
+        print('CustomersList: Customer list change detected, refreshing list');
+        if (mounted) {
+          try {
+            setState(() {
+              _isFirstLoad = true;
+            });
+            _pagingController.refresh();
+          } catch (e) {
+            print('CustomersList: Error during customer list refresh: $e');
+          }
+        }
+      }
+    });
 
     return RefreshIndicator(
       onRefresh: () async {

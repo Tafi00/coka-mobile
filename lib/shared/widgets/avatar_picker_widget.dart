@@ -7,10 +7,10 @@ class AvatarPickerWidget extends StatelessWidget {
   final Function(File?) onAvatarSelected;
 
   const AvatarPickerWidget({
-    Key? key,
+    super.key,
     this.avatarFile,
     required this.onAvatarSelected,
-  }) : super(key: key);
+  });
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();

@@ -43,9 +43,9 @@ class _AutomationCardSkeletonState extends State<AutomationCardSkeleton>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-             child: Container(
-         constraints: const BoxConstraints(minHeight: 55),
-         padding: const EdgeInsets.all(8),
+                   child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(8),
         child: AnimatedBuilder(
           animation: _animation,
           builder: (context, child) {

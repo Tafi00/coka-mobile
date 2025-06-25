@@ -232,8 +232,8 @@ class CustomerListItem extends ConsumerWidget {
                         .read(customerDetailProvider(customer['id']).notifier)
                         .deleteCustomer(organizationId, workspaceId);
                     
-                    // Invalidate customer list để refresh danh sách
-                    ref.invalidate(customerListProvider);
+                    // Trigger refresh cho customers list
+                    ref.read(customerListRefreshProvider.notifier).notifyCustomerListChanged();
                     
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
