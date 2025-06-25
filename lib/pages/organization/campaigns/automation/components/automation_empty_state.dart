@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:coka/core/constants/app_constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AutomationEmptyState extends StatelessWidget {

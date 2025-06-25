@@ -27,6 +27,7 @@ import 'pages/organization/detail_organization/workspace/customers/import_google
 import 'pages/organization/detail_organization/workspace/reminders/reminder_list_page.dart';
 import 'pages/organization/settings/settings_page.dart';
 import 'pages/organization/notifications/notifications_page.dart';
+import 'pages/organization/create_organization_page.dart';
 
 final appRoutes = [
   // Auth routes
@@ -37,6 +38,10 @@ final appRoutes = [
   GoRoute(
     path: '/complete-profile',
     builder: (context, state) => const CompleteProfilePage(),
+  ),
+  GoRoute(
+    path: '/organization/create',
+    builder: (context, state) => const CreateOrganizationPage(),
   ),
 
   // Chat detail route (đặt trước ShellRoute để ưu tiên match)

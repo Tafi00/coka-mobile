@@ -11,7 +11,6 @@ import '../../core/theme/text_styles.dart';
 import '../../core/theme/app_colors.dart';
 import '../../api/repositories/notification_repository.dart';
 import '../../api/api_client.dart';
-import '../../providers/organization_provider.dart';
 import 'loading_dialog.dart';
 
 class NotificationListWidget extends ConsumerStatefulWidget {
