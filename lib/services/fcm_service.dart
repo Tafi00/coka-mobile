@@ -275,10 +275,43 @@ class FCMService {
       final String? route = data['route'];
       final String? organizationId = data['organizationId'];
       final String? workspaceId = data['workspaceId'];
-      final String? customerId = data['customerId'];
-      final String? conversationId = data['conversationId'];
-      final String? chatbotId = data['chatbotId'];
-      final String? teamId = data['teamId'];
+
+      // Generic id được backend trả về thay thế cho các id cụ thể
+      final String? genericId = data['id'];
+
+      // Các id cụ thể, vẫn ưu tiên key cũ để đảm bảo backward-compatibility
+      String? conversationId = data['conversationId'];
+      String? chatbotId = data['chatbotId'];
+      String? teamId = data['teamId'];
+      String? customerId = data['customerId'];
+
+      // Mapping genericId → id cụ thể tuỳ theo route
+      if (genericId != null && route != null) {
+        switch (route) {
+          case 'chat_detail':
+            conversationId ??= genericId;
+            break;
+          case 'edit_chatbot':
+          case 'ai_chatbot':
+          case 'create_chatbot':
+            chatbotId ??= genericId;
+            break;
+          case 'team_detail':
+            teamId ??= genericId;
+            break;
+          case 'customer_detail':
+          case 'edit_customer':
+          case 'customer_basic_info':
+          case 'customer_reminders':
+          case 'add_customer':
+            customerId ??= genericId;
+            break;
+          default:
+            // Không cần mapping
+            break;
+        }
+      }
+
       final String? notificationId = data['notificationId'];
       
       // Mark notification as read nếu có notificationId

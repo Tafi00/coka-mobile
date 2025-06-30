@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../shared/widgets/avatar_widget.dart';
 import '../../../../../shared/widgets/search_bar.dart';
 import '../../../../../shared/widgets/dropdown_button_widget.dart';
@@ -122,19 +123,9 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                     ...buildMultiWidgetList(
                       teamList,
                       (data) {
-                                              // Chỉ navigate nếu có children
-                      if (data["childs"] != null && (data["childs"] as List).isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TeamsPage(
-                              organizationId: widget.organizationId,
-                              workspaceId: widget.workspaceId,
-                              parentId: data["id"],
-                            ),
-                          ),
-                        );
-                      }
+                        if (data["childs"] != null && (data["childs"] as List).isNotEmpty) {
+                          context.push('/organization/${widget.organizationId}/workspace/${widget.workspaceId}/teams/${data["id"]}');
+                        }
                       },
                     ),
                   ],
@@ -176,7 +167,13 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
             Icons.arrow_back,
             color: Color(0xFF1F2329),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.pop(context);
+            } else {
+              context.go('/organization/${widget.organizationId}');
+            }
+          },
         ),
         title: TitleDropdownButton(
           text: widget.parentId == null
@@ -283,16 +280,9 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                               : team['managers'][0]['fullName'],
                         ),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TeamsPage(
-                                organizationId: widget.organizationId,
-                                workspaceId: widget.workspaceId,
-                                parentId: team["id"],
-                              ),
-                            ),
-                          );
+                          if (team["childs"] != null && (team["childs"] as List).isNotEmpty) {
+                            context.push('/organization/${widget.organizationId}/workspace/${widget.workspaceId}/teams/${team["id"]}');
+                          }
                         },
                       );
                     },
@@ -378,19 +368,8 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                                           : team['managers'][0]['fullName'],
                                     ),
                                     onTap: () {
-                                      // Chỉ navigate nếu có children
                                       if (team["childs"] != null && (team["childs"] as List).isNotEmpty) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => TeamsPage(
-                                              organizationId:
-                                                  widget.organizationId,
-                                              workspaceId: widget.workspaceId,
-                                              parentId: team["id"],
-                                            ),
-                                          ),
-                                        );
+                                        context.push('/organization/${widget.organizationId}/workspace/${widget.workspaceId}/teams/${team["id"]}');
                                       }
                                     },
                                   );
@@ -555,18 +534,8 @@ class _CExpansionTileState extends State<CExpansionTile> {
                         organizationId: widget.organizationId,
                         workspaceId: widget.workspaceId,
                         onTap: () {
-                          // Chỉ navigate nếu có children
                           if (child["childs"] != null && (child["childs"] as List).isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TeamsPage(
-                                  organizationId: widget.organizationId,
-                                  workspaceId: widget.workspaceId,
-                                  parentId: child["id"],
-                                ),
-                              ),
-                            );
+                            context.push('/organization/${widget.organizationId}/workspace/${widget.workspaceId}/teams/${child["id"]}');
                           }
                         },
                       ))

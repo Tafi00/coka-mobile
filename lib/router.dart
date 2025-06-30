@@ -17,7 +17,6 @@ import 'pages/organization/campaigns/automation/automation_page.dart';
 import 'pages/organization/detail_organization/workspace/detail_workspace_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/customers_page.dart';
 import 'pages/organization/detail_organization/workspace/teams/teams_page.dart';
-import 'pages/organization/detail_organization/workspace/teams/team_detail_page.dart';
 import 'pages/organization/detail_organization/workspace/reports/reports_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/customer_detail/customer_detail_page.dart';
 import 'pages/organization/detail_organization/workspace/customers/customer_detail/pages/customer_basic_info_page.dart';
@@ -308,10 +307,10 @@ final appRoutes = [
               final organizationId = state.pathParameters['organizationId']!;
               final workspaceId = state.pathParameters['workspaceId']!;
               final teamId = state.pathParameters['teamId']!;
-              return TeamDetailPage(
+              return TeamsPage(
                 organizationId: organizationId,
                 workspaceId: workspaceId,
-                teamId: teamId,
+                parentId: teamId,
               );
             },
           ),
