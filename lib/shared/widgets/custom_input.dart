@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomInput extends StatelessWidget {
+class CustomInput extends StatefulWidget {
   final String? label;
   final String placeholder;
   final String? value;
@@ -21,21 +21,49 @@ class CustomInput extends StatelessWidget {
   });
 
   @override
+  State<CustomInput> createState() => _CustomInputState();
+}
+
+class _CustomInputState extends State<CustomInput> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value ?? '');
+  }
+
+  @override
+  void didUpdateWidget(CustomInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Chỉ cập nhật text khi value thay đổi từ bên ngoài
+    if (widget.value != oldWidget.value && widget.value != _controller.text) {
+      _controller.text = widget.value ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label != null) ...[
+        if (widget.label != null) ...[
           RichText(
             text: TextSpan(
-              text: label,
+              text: widget.label,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Color(0xFF1D2939),
               ),
               children: [
-                if (isRequired)
+                if (widget.isRequired)
                   const TextSpan(
                     text: ' *',
                     style: TextStyle(color: Color(0xFFFF0000)),
@@ -51,12 +79,12 @@ class CustomInput extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
-            controller: TextEditingController(text: value),
-            onChanged: onChanged,
-            maxLines: maxLines,
-            keyboardType: keyboardType,
+            controller: _controller,
+            onChanged: widget.onChanged,
+            maxLines: widget.maxLines,
+            keyboardType: widget.keyboardType,
             decoration: InputDecoration(
-              hintText: placeholder,
+              hintText: widget.placeholder,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,

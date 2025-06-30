@@ -28,6 +28,8 @@ import 'pages/organization/detail_organization/workspace/reminders/reminder_list
 import 'pages/organization/settings/settings_page.dart';
 import 'pages/organization/notifications/notifications_page.dart';
 import 'pages/organization/create_organization_page.dart';
+import 'pages/organization/invitation_page.dart';
+import 'pages/organization/join_request_page.dart';
 
 final appRoutes = [
   // Auth routes
@@ -163,6 +165,19 @@ final appRoutes = [
         builder: (context, state) {
           final organizationId = state.pathParameters['organizationId']!;
           return SettingsPage(organizationId: organizationId);
+        },
+      ),
+      GoRoute(
+        path: '/organization/:organizationId/invitations',
+        builder: (context, state) {
+          return const InvitationPage();
+        },
+      ),
+      GoRoute(
+        path: '/organization/:organizationId/join-requests',
+        builder: (context, state) {
+          final organizationId = state.pathParameters['organizationId']!;
+          return JoinRequestPage(organizationId: organizationId);
         },
       ),
     ],

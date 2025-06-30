@@ -62,6 +62,33 @@ class _DetailWorkspacePageState extends ConsumerState<DetailWorkspacePage> {
     final hideBottomNav = location.contains('/customers/') || 
                           (location.contains('/teams/') && location.split('/').length > 6);
 
+    // Sync currentIndex với location mỗi khi build (để handle FCM navigation)
+    int correctIndex = 0;
+    if (location.contains('/teams')) {
+      correctIndex = 1;
+    } else if (location.contains('/reports')) {
+      correctIndex = 2;
+      // Set shouldLoadReports khi vào reports page
+      if (_currentIndex != 2) {
+        Future.microtask(() {
+          if (mounted) {
+            ref.read(reportsPageShouldLoadProvider.notifier).state = true;
+          }
+        });
+      }
+    } else if (location.contains('/customers')) {
+      correctIndex = 0;
+    }
+    
+    // Cập nhật currentIndex nếu khác với correctIndex
+    if (_currentIndex != correctIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _currentIndex = correctIndex);
+        }
+      });
+    }
+
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: AnimatedCrossFade(
