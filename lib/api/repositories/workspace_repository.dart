@@ -36,14 +36,45 @@ class WorkspaceRepository {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> createWorkspace(
-    String organizationId,
-    FormData formData,
-  ) async {
+  Future<Map<String, dynamic>> createWorkspace({
+    required String organizationId,
+    required String name,
+    required String scope, // '0' cho riêng tư, '1' cho công khai
+  }) async {
+    final formData = FormData.fromMap({
+      'Name': name,
+      'Scope': scope,
+    });
+
     final response = await _apiClient.dio.post(
       '/api/v1/organization/workspace/create',
       data: formData,
-      options: Options(headers: {'organizationId': organizationId}),
+      options: Options(headers: {
+        'organizationId': organizationId,
+        'accept': '*/*',
+      }),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateWorkspace({
+    required String organizationId,
+    required String workspaceId,
+    required String name,
+    required String scope, // '0' cho riêng tư, '1' cho công khai
+  }) async {
+    final formData = FormData.fromMap({
+      'Name': name,
+      'Scope': scope,
+    });
+
+    final response = await _apiClient.dio.put(
+      '/api/v1/organization/workspace/update/$workspaceId',
+      data: formData,
+      options: Options(headers: {
+        'organizationId': organizationId,
+        'accept': '*/*',
+      }),
     );
     return response.data;
   }

@@ -6,6 +6,8 @@ import '../../../../api/repositories/workspace_repository.dart';
 import '../../../../api/api_client.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import 'package:go_router/go_router.dart';
+import 'create_workspace_dialog.dart';
+import 'edit_workspace_dialog.dart';
 
 class WorkspaceList extends StatefulWidget {
   final String organizationId;
@@ -69,6 +71,31 @@ class _WorkspaceListState extends State<WorkspaceList> {
     }
   }
 
+  void _showCreateWorkspaceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => CreateWorkspaceDialog(
+        organizationId: widget.organizationId,
+        onWorkspaceCreated: () {
+          _fetchWorkspaces(); // Refresh danh sách workspace sau khi tạo
+        },
+      ),
+    );
+  }
+
+  void _showEditWorkspaceDialog(Map<String, dynamic> workspace) {
+    showDialog(
+      context: context,
+      builder: (context) => EditWorkspaceDialog(
+        organizationId: widget.organizationId,
+        workspace: workspace,
+        onWorkspaceUpdated: () {
+          _fetchWorkspaces(); // Refresh danh sách workspace sau khi cập nhật
+        },
+      ),
+    );
+  }
+
   void _showAllWorkspaces() {
     showModalBottomSheet(
       context: context,
@@ -85,11 +112,28 @@ class _WorkspaceListState extends State<WorkspaceList> {
         builder: (context, scrollController) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
-              child: Text(
-                'Không gian làm việc',
-                style: TextStyles.title,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Không gian làm việc',
+                      style: TextStyles.title,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _showCreateWorkspaceDialog();
+                    },
+                    icon: const Icon(
+                      Icons.add,
+                      color: AppColors.primary,
+                    ),
+                    tooltip: 'Tạo workspace mới',
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -115,6 +159,9 @@ class _WorkspaceListState extends State<WorkspaceList> {
           // Sử dụng go thay vì push để replace route thay vì thêm vào stack
           context.go(
               '/organization/${widget.organizationId}/workspace/${workspace['id']}/customers');
+        },
+        onLongPress: () {
+          _showEditWorkspaceDialog(workspace);
         },
         child: Row(
           children: [
@@ -342,15 +389,33 @@ class _WorkspaceListState extends State<WorkspaceList> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: Text(
-            'Không gian làm việc',
-            style: TextStyle(
-              color: AppColors.text,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Không gian làm việc',
+                  style: TextStyle(
+                    color: AppColors.text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (widget.organizationId != 'default')
+                IconButton(
+                  onPressed: _showCreateWorkspaceDialog,
+                  icon: const Icon(
+                    Icons.add,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  tooltip: 'Tạo workspace mới',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
           ),
         ),
         _isLoading ? _buildShimmerLoading() : _buildContent(),
